@@ -256,7 +256,7 @@ class FrontendController extends Controller
 
     public function publicSidebar(): JsonResponse
     {
-        $portalId = 1;
+        $portalId = app()->bound('current.portal') ? (app('current.portal')?->id ?? 1) : 1;
 
         $sidebarSetting = PortalSetting::where('portal_id', $portalId)
             ->where('key', 'sidebar_config')
@@ -325,7 +325,7 @@ class FrontendController extends Controller
 
     public function publicHeaderFooter(): JsonResponse
     {
-        $portalId = 1;
+        $portalId = app()->bound('current.portal') ? (app('current.portal')?->id ?? 1) : 1;
 
         $setting = PortalSetting::where('portal_id', $portalId)
             ->where('key', 'header_footer_config')
@@ -389,7 +389,7 @@ class FrontendController extends Controller
 
     public function publicYouTube(): JsonResponse
     {
-        $portalId = 1;
+        $portalId = app()->bound('current.portal') ? (app('current.portal')?->id ?? 1) : 1;
 
         $setting = PortalSetting::where('portal_id', $portalId)
             ->where('key', 'youtube_config')
@@ -414,7 +414,7 @@ class FrontendController extends Controller
 
     public function publicSections(): JsonResponse
     {
-        $portalId = 1;
+        $portalId = app()->bound('current.portal') ? (app('current.portal')?->id ?? 1) : 1;
 
         $sections = HomepageSection::where('portal_id', $portalId)
             ->where('is_active', true)

@@ -65,6 +65,13 @@
           <span class="w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
           লাইভ
         </NuxtLink>
+        <NuxtLink
+          to="/search"
+          class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center"
+          title="সংবাদ অনুসন্ধান করুন"
+        >
+          <span>🔍</span>
+        </NuxtLink>
       </div>
     </div>
 

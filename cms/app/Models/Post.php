@@ -66,8 +66,9 @@ class Post extends Model
         // Auto-calculate reading time before saving
         static::saving(function (Post $post) {
             if ($post->isDirty('body')) {
-                $wordCount = str_word_count(strip_tags($post->body));
-                $post->reading_time_minutes = max(1, (int) ceil($wordCount / 200));
+                $stripped = strip_tags($post->body ?? '');
+                $wordCount = preg_match_all('/\p{L}+/u', $stripped);
+                $post->reading_time_minutes = max(1, (int) ceil(($wordCount ?: str_word_count($stripped)) / 180));
             }
 
             if (($post->status === PostStatus::Published || (is_string($post->status) && $post->status === 'published')) && empty($post->published_at)) {

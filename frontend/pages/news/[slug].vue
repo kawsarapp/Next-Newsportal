@@ -6,7 +6,7 @@
       <span>/</span>
       <NuxtLink
         v-if="post?.category"
-        :to="`/${post.category.slug}`"
+        :to="`/category/${post.category.slug}`"
         class="text-red-600 font-medium hover:underline"
       >
         {{ post.category.name }}
@@ -233,7 +233,7 @@
             </h3>
             <NuxtLink
               v-if="post.category"
-              :to="`/${post.category.slug}`"
+              :to="`/category/${post.category.slug}`"
               class="text-[11px] font-semibold text-red-600 hover:underline"
             >
               সবগুলো →

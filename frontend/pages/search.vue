@@ -45,7 +45,7 @@
         <NuxtLink :to="`/news/${post.slug}`" class="space-y-3 block">
           <div class="h-44 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
             <img
-              :src="post.featured_image?.original || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
+              :src="post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
               :alt="post.title"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />
