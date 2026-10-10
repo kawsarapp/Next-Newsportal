@@ -1,5 +1,13 @@
 <template>
   <div class="space-y-6">
+    <!-- Reading Progress Bar (Fixed at the very top of viewport) -->
+    <div class="fixed top-0 left-0 right-0 h-1.5 z-50 bg-gray-200/50 pointer-events-none">
+      <div
+        class="h-full bg-gradient-to-r from-red-500 via-red-600 to-rose-600 transition-[width] duration-150 ease-out"
+        :style="{ width: `${readingProgress}%` }"
+      ></div>
+    </div>
+
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-xs text-gray-500">
       <NuxtLink to="/" class="hover:text-red-600 transition-colors">প্রচ্ছদ</NuxtLink>
@@ -75,6 +83,50 @@
               <span>👁️ {{ post.view_count || 1 }} ভিউ</span>
             </div>
           </div>
+
+          <!-- Reader Experience Toolbar (Font size adjuster & reading tracker) -->
+          <div class="flex items-center justify-between gap-3 py-2 px-3 bg-gray-50/90 rounded-xl border border-gray-100 text-xs text-gray-600">
+            <div class="flex items-center gap-2">
+              <span class="text-gray-500 font-medium">হরফের আকার:</span>
+              <div class="flex items-center bg-white rounded-lg p-0.5 border border-gray-200 shadow-2xs">
+                <button
+                  @click="setFontSize('small')"
+                  type="button"
+                  class="px-2.5 py-1 rounded-md text-xs font-bold transition-all"
+                  :class="currentFontSize === 'small' ? 'bg-red-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+                  title="হরফ ছোট করুন (A-)"
+                  aria-label="হরফ ছোট করুন"
+                >
+                  A-
+                </button>
+                <button
+                  @click="setFontSize('normal')"
+                  type="button"
+                  class="px-2.5 py-1 rounded-md text-xs font-bold transition-all"
+                  :class="currentFontSize === 'normal' ? 'bg-red-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+                  title="স্বাভাবিক হরফ (A)"
+                  aria-label="স্বাভাবিক হরফ"
+                >
+                  A
+                </button>
+                <button
+                  @click="setFontSize('large')"
+                  type="button"
+                  class="px-2.5 py-1 rounded-md text-xs font-bold transition-all"
+                  :class="currentFontSize === 'large' ? 'bg-red-600 text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+                  title="হরফ বড় করুন (A+)"
+                  aria-label="হরফ বড় করুন"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
+              <span class="hidden sm:inline">পঠিত:</span>
+              <span class="font-bold text-red-600 font-mono">{{ readingProgress }}%</span>
+            </div>
+          </div>
         </div>
 
         <!-- Excerpt Highlight -->
@@ -94,9 +146,18 @@
           </div>
         </div>
 
-        <!-- Main Body HTML -->
-        <div v-if="post.body" class="article-content pt-2" v-html="post.body"></div>
-        <div v-else-if="post.excerpt" class="article-content pt-2 text-gray-700">
+        <!-- Main Body HTML with Dynamic Font Size -->
+        <div
+          v-if="post.body"
+          class="article-content pt-2 transition-all duration-200"
+          :style="fontSizeStyle"
+          v-html="post.body"
+        ></div>
+        <div
+          v-else-if="post.excerpt"
+          class="article-content pt-2 text-gray-700 transition-all duration-200"
+          :style="fontSizeStyle"
+        >
           <p>{{ post.excerpt }}</p>
         </div>
 
@@ -424,8 +485,65 @@ const loadSocialWidgets = () => {
   }
 }
 
+// 4. Reader Experience (Font Size Controller & Reading Progress)
+const currentFontSize = ref('normal')
+
+const setFontSize = (size) => {
+  currentFontSize.value = size
+  if (process.client) {
+    localStorage.setItem('newsportal_font_size', size)
+  }
+}
+
+const fontSizeStyle = computed(() => {
+  if (currentFontSize.value === 'small') {
+    return {
+      fontSize: '1rem',
+      lineHeight: '1.75'
+    }
+  }
+  if (currentFontSize.value === 'large') {
+    return {
+      fontSize: '1.375rem',
+      lineHeight: '2.05'
+    }
+  }
+  return {
+    fontSize: '1.125rem',
+    lineHeight: '1.85'
+  }
+})
+
+const readingProgress = ref(0)
+
+const updateReadingProgress = () => {
+  if (!process.client) return
+  const winScroll = document.documentElement.scrollTop || document.body.scrollTop
+  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+  if (height > 0) {
+    const scrolled = (winScroll / height) * 100
+    readingProgress.value = Math.min(100, Math.max(0, Math.round(scrolled)))
+  } else {
+    readingProgress.value = 0
+  }
+}
+
 onMounted(() => {
   loadSocialWidgets()
+  if (process.client) {
+    const saved = localStorage.getItem('newsportal_font_size')
+    if (saved && ['small', 'normal', 'large'].includes(saved)) {
+      currentFontSize.value = saved
+    }
+    window.addEventListener('scroll', updateReadingProgress, { passive: true })
+    updateReadingProgress()
+  }
+})
+
+onUnmounted(() => {
+  if (process.client) {
+    window.removeEventListener('scroll', updateReadingProgress)
+  }
 })
 
 watch(() => post.value?.body, () => {
