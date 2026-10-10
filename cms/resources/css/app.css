@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+
+/* ─── Design Tokens (overridden dynamically from portal DB via JS) ─────────── */
+:root {
+    --color-primary:      #E63946;
+    --color-secondary:    #1D3557;
+    --color-accent:       #457B9D;
+    --color-background:   #FFFFFF;
+    --color-surface:      #F8F9FA;
+    --color-text:         #212529;
+    --color-text-muted:   #6C757D;
+    --color-border:       #DEE2E6;
+    --color-success:      #28A745;
+    --color-warning:      #FFC107;
+    --color-danger:       #DC3545;
+
+    --font-family-heading: 'Hind Siliguri', sans-serif;
+    --font-family-body:    'Noto Sans Bengali', sans-serif;
+    --font-size-base:      16px;
+
+    --border-radius-sm:   4px;
+    --border-radius-md:   8px;
+    --border-radius-lg:   12px;
+
+    --header-height:      64px;
+    --sidebar-width:      260px;
+    --sidebar-collapsed:  64px;
+}
+
+/* ─── Bangla Font Stack ─────────────────────────────────────────────────────── */
+body {
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-base);
+    color: var(--color-text);
+    background-color: var(--color-background);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family-heading);
+}
+
+/* ─── Dashboard Layout ──────────────────────────────────────────────────────── */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    min-height: 100vh;
+}
+
+.dashboard-layout.sidebar-collapsed {
+    grid-template-columns: var(--sidebar-collapsed) 1fr;
+}
+
+/* ─── Transitions ────────────────────────────────────────────────────────────── */
+.sidebar-transition {
+    transition: width 200ms ease-in-out, transform 200ms ease-in-out;
+}
+
+/* ─── Status Badges ──────────────────────────────────────────────────────────── */
+.badge-draft            { @apply bg-gray-100 text-gray-700; }
+.badge-pending_review   { @apply bg-yellow-100 text-yellow-800; }
+.badge-approved         { @apply bg-blue-100 text-blue-800; }
+.badge-published        { @apply bg-green-100 text-green-800; }
+.badge-scheduled        { @apply bg-purple-100 text-purple-800; }
+.badge-archived         { @apply bg-orange-100 text-orange-800; }
+.badge-trashed          { @apply bg-red-100 text-red-800; }

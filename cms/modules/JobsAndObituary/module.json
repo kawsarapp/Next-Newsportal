@@ -1,0 +1,8 @@
+{
+  "name": "চাকরির খবর ও শোকবার্তা (Jobs & Obituary)",
+  "slug": "JobsAndObituary",
+  "version": "1.0.0",
+  "description": "সরকারি-বেসরকারি চাকরির বিজ্ঞপ্তি এবং স্মরণিকা ও শোকবার্তা প্রকাশের জন্য বিশেষ ডেডিকেটেড সেকশন।",
+  "author": "Newsportal Core Team",
+  "icon": "briefcase"
+}

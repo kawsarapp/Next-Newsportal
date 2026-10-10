@@ -1,0 +1,8 @@
+{
+  "name": "লাইভ ক্রিকেট ও স্পোর্টস স্কোরবোর্ড",
+  "slug": "CricketScoreboard",
+  "version": "1.0.0",
+  "description": "লাইভ ক্রিকেট ও ফুটবল ম্যাচের রিয়েলটাইম স্কোরকার্ড, বল-বাই-বল রান ও উইকেট উইজেট।",
+  "author": "Newsportal Core Team",
+  "icon": "cricket"
+}

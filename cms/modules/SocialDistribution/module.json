@@ -1,0 +1,8 @@
+{
+  "name": "সোশ্যাল মিডিয়া ডিস্ট্রিবিউশন",
+  "slug": "SocialDistribution",
+  "version": "1.0.0",
+  "description": "ফেসবুক পেজ, টেলিগ্রাম চ্যানেল এবং এক্স (টুইটার)-এ সংবাদ স্বয়ংক্রিয় বা এক ক্লিকে শেয়ার করার প্লাগইন।",
+  "author": "Newsportal Core Team",
+  "icon": "share"
+}

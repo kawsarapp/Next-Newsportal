@@ -1,0 +1,8 @@
+{
+  "name": "অনলাইন পোল ও জনমত জরিপ",
+  "slug": "PollsAndSurveys",
+  "version": "1.0.0",
+  "description": "পাঠকদের জন্য তাৎক্ষণিক অনলাইন ভোটিং ও ফলাফল প্রদর্শনের এক্সটেনশন।",
+  "author": "Newsportal Core Team",
+  "icon": "poll"
+}

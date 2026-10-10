@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+:root {
+  --font-bangla: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+  --color-primary: #dc2626;
+}
+
+body {
+  font-family: var(--font-bangla);
+  background-color: #f9fafb;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+}
+
+/* Page transitions for pure SPA feel */
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.2s ease-out;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+/* Article rich text formatting */
+.article-content {
+  font-size: 1.125rem;
+  line-height: 1.85;
+  color: #1f2937;
+}
+
+.article-content p {
+  margin-bottom: 1.25rem;
+}
+
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  font-weight: 700;
+  color: #111827;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.article-content h2 { font-size: 1.5rem; }
+.article-content h3 { font-size: 1.25rem; }
+
+.article-content ul,
+.article-content ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.article-content ul { list-style-type: disc; }
+.article-content ol { list-style-type: decimal; }
+
+.article-content blockquote {
+  border-left: 4px solid #dc2626;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #4b5563;
+  margin: 1.5rem 0;
+}
+
+.article-content img {
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive Video & Social Media Embeds */
+.article-content iframe {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.75rem;
+  margin: 1.5rem auto;
+  display: block;
+  border: 0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.article-content iframe.aspect-video,
+.article-content iframe[src*="youtube.com"],
+.article-content iframe[src*="youtu.be"],
+.article-content iframe[src*="vimeo.com"],
+.article-content iframe[data-embed-type="youtube"] {
+  aspect-ratio: 16 / 9;
+  height: auto !important;
+}
+
+.article-content iframe[src*="facebook.com"],
+.article-content iframe[data-embed-type="facebook"] {
+  max-width: 550px;
+}
+
+.article-content iframe[src*="twitter.com"],
+.article-content iframe[src*="platform.twitter.com"],
+.article-content iframe[data-embed-type="twitter"] {
+  max-width: 550px;
+}
+
+.article-content blockquote.twitter-tweet {
+  margin: 1.5rem auto;
+  border-left: none;
+  font-style: normal;
+  display: flex;
+  justify-content: center;
+}
+
+/* Sleek sidebar scrollbar */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+

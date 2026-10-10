@@ -1,0 +1,8 @@
+{
+  "name": "পাঠক ও এনগেজমেন্ট (Audience & Comments)",
+  "slug": "AudienceEngagement",
+  "version": "1.0.0",
+  "description": "পাঠকদের মন্তব্য মডারেশন, স্প্যাম প্রতিরোধ, নিউজলেটার সাবস্ক্রিপশন এবং পুশ নোটিফিকেশন মডিউল।",
+  "author": "Newsportal Core Team",
+  "icon": "audience"
+}

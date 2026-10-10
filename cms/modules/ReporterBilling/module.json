@@ -1,0 +1,8 @@
+{
+  "name": "রিপোর্টার সম্মানী ও পেরোল (Billing & Payments)",
+  "slug": "ReporterBilling",
+  "version": "1.0.0",
+  "description": "জেলা ও উপজেলা প্রতিনিধিদের প্রকাশিত খবরের হিসাব, রেট নির্ধারণ ও মাসিক বিলিং ম্যানেজমেন্ট।",
+  "author": "Newsportal Core Team",
+  "icon": "cash"
+}

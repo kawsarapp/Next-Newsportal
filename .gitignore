@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Nuxt & Build Output
+.output/
+.nuxt/
+dist/
+public/build/
+public/hot/
+public/storage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs and Caches
+*.log
+storage/logs/*.log
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/*.key
+
+# IDE / System
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# DDEV
+.ddev/.dbimageBuild/
+.ddev/db_snapshots/

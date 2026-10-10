@@ -1,0 +1,8 @@
+{
+  "name": "ডিজিটাল ই-পেপার ভিউয়ার",
+  "slug": "EPaperViewer",
+  "version": "1.0.0",
+  "description": "মুদ্রিত পত্রিকার মতো পেজ ফ্লিপ ও কাটিং সুবিধা সম্বলিত আধুনিক ডিজিটাল ই-পেপার এক্সটেনশন।",
+  "author": "Newsportal Core Team",
+  "icon": "newspaper"
+}
