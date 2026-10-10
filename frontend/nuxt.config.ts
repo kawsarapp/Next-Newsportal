@@ -33,9 +33,17 @@ export default defineNuxtConfig({
     ],
   },
 
+  nitro: {
+    routeRules: {
+      '/api/v1/**': {
+        proxy: 'http://newsportal-cms.ddev.site/api/v1/**',
+      },
+    },
+  },
+
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'https://newsportal-cms.ddev.site/api/v1',
+      apiBase: '/api/v1',
       portalKey: process.env.NUXT_PUBLIC_PORTAL_KEY || 'pk_live_3hGHMgZc4RhMJ22FHTuqCBpU6fCOgQJd6tjv5agt',
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'দৈনিক বাংলা',
     },
