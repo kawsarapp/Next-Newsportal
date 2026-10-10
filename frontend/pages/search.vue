@@ -7,7 +7,8 @@
         <span>অনুসন্ধান</span>
       </div>
       <h2 class="text-2xl font-bold text-gray-900">
-        অনুসন্ধান ফলাফল: <span class="text-red-600">"{{ query }}"</span>
+        <span v-if="query">অনুসন্ধান ফলাফল: <span class="text-red-600">"{{ query }}"</span></span>
+        <span v-else>সংবাদ অনুসন্ধান</span>
       </h2>
     </div>
 
@@ -17,10 +18,10 @@
         <input
           v-model="searchInput"
           type="text"
-          placeholder="অন্য কোনো শব্দ দিয়ে খুঁজুন..."
-          class="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm outline-none focus:border-red-600"
+          placeholder="সংবাদ বা বিষয়ের নাম লিখে খুঁজুন..."
+          class="flex-1 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm outline-none focus:border-red-600 focus:ring-2 focus:ring-red-500/20"
         />
-        <button type="submit" class="px-5 py-2.5 bg-red-600 text-white font-semibold text-sm rounded-xl hover:bg-red-700 transition-colors">
+        <button type="submit" class="px-5 py-2.5 bg-red-600 text-white font-semibold text-sm rounded-xl hover:bg-red-700 transition-colors cursor-pointer">
           খুঁজুন
         </button>
       </form>
@@ -31,7 +32,16 @@
       <div v-for="i in 3" :key="i" class="h-64 bg-gray-200 rounded-2xl"></div>
     </div>
 
-    <div v-else-if="posts.length === 0" class="text-center py-20 bg-white rounded-2xl border p-8 space-y-2">
+    <!-- Initial Empty Search prompt -->
+    <div v-else-if="!query" class="text-center py-20 bg-white rounded-2xl border border-gray-200/80 p-8 space-y-3 shadow-2xs">
+      <div class="text-4xl">🔍</div>
+      <p class="text-base font-bold text-gray-800">কোনো বিষয় বা শিরোনাম লিখে অনুসন্ধান করুন</p>
+      <p class="text-xs text-gray-500 max-w-sm mx-auto">জাতীয়, রাজনীতি, খেলাধুলা বা অর্থনীতি বিষয়ক যেকোনো খবরের কি-ওয়ার্ড উপরের বক্সে লিখে খুঁজুন।</p>
+    </div>
+
+    <!-- Query Given but No Results -->
+    <div v-else-if="posts.length === 0" class="text-center py-20 bg-white rounded-2xl border border-gray-200/80 p-8 space-y-2 shadow-2xs">
+      <div class="text-4xl">📂</div>
       <p class="text-base font-bold text-gray-700">"{{ query }}" সম্পর্কিত কোনো সংবাদ পাওয়া যায়নি</p>
       <p class="text-xs text-gray-400">অন্য কোনো প্রাসঙ্গিক শব্দ দিয়ে চেষ্টা করুন।</p>
     </div>

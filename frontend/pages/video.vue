@@ -126,7 +126,7 @@
 const config = useRuntimeConfig()
 
 // 1. Fetch YouTube section config
-const { data: ytConfigResponse } = await useFetch(`${config.public.apiBase}/youtube-section-config`, {
+const { data: ytConfigResponse } = await useFetch(`${config.public.apiBase}/youtube-config`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
@@ -136,8 +136,17 @@ const { data: ytConfigResponse } = await useFetch(`${config.public.apiBase}/yout
 })
 
 const ytConfig = computed(() => ytConfigResponse.value?.data || {})
-const ytLiveId = computed(() => ytConfig.value.live_video_id || '')
+const ytLiveId = computed(() => {
+  return ytConfig.value.live_video_id || extractYoutubeId(ytConfig.value.live_video_url) || ''
+})
 const ytVideos = computed(() => ytConfig.value.videos || [])
+
+function extractYoutubeId(url) {
+  if (!url) return null
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+  const match = url.match(regExp)
+  return (match && match[2].length === 11) ? match[2] : null
+}
 
 // Default sample videos if none returned
 const defaultVideos = [

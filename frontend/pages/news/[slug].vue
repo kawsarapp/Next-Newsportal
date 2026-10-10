@@ -576,9 +576,26 @@ const formatTimeAgo = (dateStr) => {
   }
 }
 
-const copyLink = () => {
-  navigator.clipboard.writeText(window.location.href)
-  alert('সংবাদের লিংক কপি করা হয়েছে!')
+const copyLink = async () => {
+  if (process.client) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(window.location.href)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = window.location.href
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      alert('সংবাদের লিংক কপি করা হয়েছে!')
+    } catch {
+      alert('লিংক কপি করা সম্ভব হয়নি।')
+    }
+  }
 }
 
 const share = (platform) => {

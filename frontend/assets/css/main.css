@@ -36,6 +36,23 @@ body {
   font-size: 1.125rem;
   line-height: 1.85;
   color: #1f2937;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.article-content table {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+}
+
+.article-content table th,
+.article-content table td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
 }
 
 .article-content p {

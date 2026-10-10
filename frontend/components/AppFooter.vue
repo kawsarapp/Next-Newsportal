@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-gray-900 text-gray-400 border-t border-gray-800 text-xs py-10 px-4 sm:px-8 mt-16">
+  <div class="bg-gray-900 text-gray-400 border-t border-gray-800 text-xs pt-10 pb-24 md:pb-10 px-4 sm:px-8 mt-16">
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
       <!-- 1. About / Bio -->
       <div class="space-y-3">
@@ -61,19 +61,28 @@
         </p>
       </div>
 
-      <!-- 4. Architecture / About Headless -->
+      <!-- 4. Special Features -->
       <div>
-        <h4 class="text-white font-semibold text-sm mb-3">ডিজিটাল আর্কিটেকচার</h4>
-        <p class="leading-relaxed">
-          এই ফ্রন্টএন্ডটি সেন্ট্রাল হেডলেস সিএমএস ব্যাকএন্ডের সাথে যুক্ত। সম্পূর্ণ সিঙ্গেল পেজ অ্যাপ্লিকেশন (SPA) আর্কিটেকচার।
-        </p>
+        <h4 class="text-white font-semibold text-sm mb-3">ডিজিটাল সেবা</h4>
+        <ul class="space-y-2">
+          <li><NuxtLink to="/epaper" class="hover:text-white transition-colors flex items-center gap-1.5"><span>📰</span> ডিজিটাল ই-পেপার</NuxtLink></li>
+          <li><NuxtLink to="/live" class="hover:text-white transition-colors flex items-center gap-1.5"><span>🔴</span> লাইভ সম্প্রচার</NuxtLink></li>
+          <li><NuxtLink to="/video" class="hover:text-white transition-colors flex items-center gap-1.5"><span>▶️</span> ভিডিও বুলেটিন</NuxtLink></li>
+          <li><NuxtLink to="/search" class="hover:text-white transition-colors flex items-center gap-1.5"><span>🔍</span> সংবাদ অনুসন্ধান</NuxtLink></li>
+        </ul>
       </div>
     </div>
 
     <!-- Bottom Copyright -->
     <div class="max-w-7xl mx-auto pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
       <p>{{ hfConfig.copyright_text || '© ২০২৬ দৈনিক বাংলা নিউজপোর্টাল। সর্বস্বত্ব সংরক্ষিত।' }}</p>
-      <p>Developed with Nuxt 3 SPA & Laravel Headless CMS Engine</p>
+      <div class="flex items-center gap-4 text-gray-500">
+        <span>গোপনীয়তা নীতি</span>
+        <span>·</span>
+        <span>ব্যবহারের শর্তাবলি</span>
+        <span>·</span>
+        <span>বিজ্ঞাপন নীতিমালা</span>
+      </div>
     </div>
   </div>
 </template>
