@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-8">
+  <div class="space-y-4 sm:space-y-6" :class="{ 'epaper-modal-open': !!selectedClipping }">
     <!-- Breadcrumb & Page Header -->
-    <div class="border-b border-gray-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="no-print border-b border-gray-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <nav class="flex items-center gap-2 text-xs text-gray-500 mb-1.5 font-medium">
           <NuxtLink to="/" class="hover:text-red-600 transition-colors">প্রচ্ছদ</NuxtLink>
@@ -68,7 +68,7 @@
     </div>
 
     <!-- TOP SPONSORED AD BANNER (Digital Monetization) -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-950 via-slate-900 to-red-900 text-white p-4 sm:p-5 shadow-sm border border-red-900/40">
+    <div class="no-print relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-950 via-slate-900 to-red-900 text-white p-4 sm:p-5 shadow-sm border border-red-900/40">
       <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-amber-400 text-black rounded">
@@ -101,9 +101,9 @@
     </div>
 
     <!-- E-PAPER WORKSPACE -->
-    <div class="bg-gray-100 rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+    <div class="epaper-workspace-print bg-gray-100 rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
       <!-- CONTROL TOOLBAR: Dual Mode Switcher, Page Selector, Bottom Sheet Trigger & Zoom -->
-      <div class="bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20 shadow-2xs">
+      <div class="no-print bg-white border-b border-gray-200 px-3 sm:px-4 py-3 flex flex-wrap items-center justify-between gap-2.5 sticky top-0 z-20 shadow-2xs">
         
         <!-- Left: Dual View Mode Segmented Switcher -->
         <div class="flex items-center gap-2">
@@ -140,17 +140,44 @@
             </button>
           </div>
 
-          <!-- Bottom Sheet Drawer Trigger Button (All screens) -->
+          <!-- Desktop All Pages Drawer Trigger -->
           <button
             @click="openBottomSheet"
-            class="px-2.5 sm:px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            class="hidden lg:flex px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition items-center gap-1.5 cursor-pointer"
             title="সকল পাতার ড্রয়ার খুলুন"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
             </svg>
-            <span class="hidden sm:inline">পৃষ্ঠা নির্বাচন:</span>
+            <span>পৃষ্ঠা নির্বাচন:</span>
             <span>({{ activePage + 1 }}/{{ epaperData?.pages?.length || 6 }})</span>
+          </button>
+        </div>
+
+        <!-- Mobile/Tablet Compact Page Controls (< lg) -->
+        <div class="flex lg:hidden items-center gap-1.5">
+          <button
+            @click="prevPage"
+            :disabled="activePage === 0"
+            class="px-2.5 py-1.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 text-xs font-bold transition cursor-pointer"
+            title="পূর্ববর্তী পাতা"
+          >
+            ‹ পূর্ববর্তী
+          </button>
+          <button
+            @click="openBottomSheet"
+            class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+            title="সকল পাতা"
+          >
+            <span>📑 পৃষ্ঠা {{ activePage + 1 }}/{{ epaperData?.pages?.length || 6 }}</span>
+          </button>
+          <button
+            @click="nextPage"
+            :disabled="activePage === (epaperData?.pages?.length || 1) - 1"
+            class="px-2.5 py-1.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 text-xs font-bold transition cursor-pointer"
+            title="পরবর্তী পাতা"
+          >
+            পরবর্তী ›
           </button>
         </div>
 
@@ -195,30 +222,10 @@
           </button>
         </div>
 
-        <!-- Right Side: Zoom Controls (In Broadsheet mode) & Fullscreen Switcher -->
-        <div class="flex items-center gap-2">
-          <!-- Hotspots Highlight Toggle (Broadsheet mode only) -->
-          <button
-            v-if="viewMode === 'broadsheet'"
-            @click="showHotspots = !showHotspots"
-            :class="[
-              'px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition cursor-pointer',
-              showHotspots 
-                ? 'bg-red-50 text-red-700 border-red-300' 
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-            ]"
-            title="সংবাদ কাটিং জোন নির্দেশক চালু বা বন্ধ করুন"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-            <span class="hidden sm:inline">কাটিং জোন:</span>
-            <span class="font-bold">{{ showHotspots ? 'চালু' : 'বন্ধ' }}</span>
-          </button>
-
-          <!-- Zoom In / Zoom Out Controls (Broadsheet mode only) -->
-          <div v-if="viewMode === 'broadsheet'" class="flex items-center bg-gray-50 border border-gray-200 rounded-xl p-0.5">
+        <!-- Right Side: Desktop Zoom Controls & Fullscreen Switcher -->
+        <div class="hidden sm:flex items-center gap-2">
+          <!-- Zoom In / Zoom Out Controls (Broadsheet mode on Desktop) -->
+          <div v-if="viewMode === 'broadsheet'" class="hidden lg:flex items-center bg-gray-50 border border-gray-200 rounded-xl p-0.5">
             <button
               @click="zoomOut"
               :disabled="zoomLevel <= 60"
@@ -244,7 +251,7 @@
             </button>
             <button
               @click="resetZoom"
-              class="hidden sm:inline-block px-2 py-1 text-[11px] font-semibold text-gray-600 hover:text-red-600 border-l border-gray-200 transition"
+              class="px-2 py-1 text-[11px] font-semibold text-gray-600 hover:text-red-600 border-l border-gray-200 transition"
               title="রিসেট ভিউ (১০০%)"
             >
               রিসেট
@@ -268,7 +275,7 @@
       </div>
 
       <!-- Current Page Information Ribbon -->
-      <div class="bg-stone-50 border-b border-stone-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-600">
+      <div class="no-print bg-stone-50 border-b border-stone-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-600">
         <div class="flex items-center gap-2">
           <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-600 shrink-0"></span>
           <span class="font-bold text-stone-900">পৃষ্ঠা {{ currentPage?.page_no }}: {{ currentPage?.title }}</span>
@@ -276,7 +283,7 @@
           <span class="text-stone-600 hidden sm:inline">{{ currentPage?.subtitle }}</span>
         </div>
         <div class="flex items-center gap-3 text-[11px]">
-          <span class="hidden md:inline text-stone-500">সোয়াইপ করে পাতা পরিবর্তন করুন ‹ ›</span>
+          <span class="hidden md:inline text-stone-500">যেকোনো সংবাদে ক্লিক করে বিস্তারিত পড়ুন ও অডিও শুনুন</span>
           <span class="hidden md:inline text-stone-300">|</span>
           <button @click="downloadPage('image')" class="hover:text-red-600 font-semibold underline cursor-pointer flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,263 +304,219 @@
         <!-- ================= MODE 1: TRADITIONAL BROADSHEET CANVAS ================= -->
         <div 
           v-if="viewMode === 'broadsheet'"
-          class="p-2 sm:p-8 overflow-auto flex justify-start md:justify-center bg-stone-300 min-h-[700px] relative"
+          class="epaper-broadsheet-outer p-2 sm:p-6 md:p-8 bg-stone-200/80 overflow-x-auto"
         >
-          <!-- Mobile Scroll / Tip hint -->
-          <div class="absolute top-2 left-1/2 -translate-x-1/2 md:hidden z-10 pointer-events-none">
-            <span class="px-2.5 py-1 bg-stone-900/80 text-white text-[10px] font-sans rounded-full backdrop-blur-xs flex items-center gap-1">
-              <span>👈 সোয়াইপ করুন অথবা জুম করুন 👉</span>
-            </span>
-          </div>
-
-          <!-- SCALED NEWSPAPER SHEET -->
+          <!-- Authentic Responsive Broadsheet Newspaper Canvas -->
           <div 
-            :style="{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }"
-            class="transition-transform duration-200 ease-out will-change-transform shadow-2xl rounded-sm my-2"
+            :style="zoomLevel !== 100 ? { zoom: `${zoomLevel}%` } : {}"
+            class="epaper-broadsheet-sheet w-full max-w-[920px] mx-auto bg-[#fcfbf7] text-stone-900 border border-stone-400 p-3.5 sm:p-6 md:p-8 shadow-2xl rounded-xs relative font-serif transition-all"
           >
-            <!-- Authentic Broadsheet Newspaper Canvas -->
-            <div 
-              class="w-[880px] bg-[#fcfbf7] text-stone-900 border border-stone-400 p-8 select-none relative font-serif"
-              style="min-height: 1220px; box-shadow: inset 0 0 60px rgba(0,0,0,0.03);"
-            >
-              <!-- NEWSPAPER MASTHEAD (HEADER) -->
-              <div class="border-b-4 border-stone-900 pb-3 mb-4">
-                <!-- Top Info Bar -->
-                <div class="flex items-center justify-between text-[11px] font-sans text-stone-600 border-b border-stone-300 pb-1 mb-2">
-                  <div>
-                    <strong>বর্ষ ৫০</strong> • <strong>সংখ্যা ২৭৪</strong> • <strong>রেজিস্ট্রেশন নং: ডিএ-১২৫</strong>
-                  </div>
-                  <div>
-                    ঢাকা, বাংলাদেশ • {{ currentPage?.edition_date || epaperData?.edition_date_formatted }} • মূল্য: ১০.০০ টাকা
-                  </div>
-                  <div class="font-bold text-red-700 uppercase tracking-widest">
-                    {{ currentPage?.edition || 'ঢাকা সংস্করণ' }}
-                  </div>
-                </div>
-
-                <!-- Big Bold Masthead Title -->
-                <div class="text-center py-2 relative">
-                  <div class="text-xs font-sans tracking-widest text-stone-500 uppercase mb-1">
-                    স্বাধীন ও নিরপেক্ষ সাংবাদিকতার পথিকৃৎ
-                  </div>
-                  <h2 class="text-5xl font-black tracking-tight text-stone-900 font-serif drop-shadow-2xs">
-                    দৈনিক বাংলা
-                  </h2>
-                  <div class="text-[11px] font-sans text-stone-600 italic mt-1">
-                    DAINIK BANGLA • সত্য ও ন্যায়ের নির্ভীক কণ্ঠস্বর
-                  </div>
-                </div>
-
-                <!-- Page Subhead Ribbon -->
-                <div class="flex items-center justify-between bg-stone-900 text-[#fcfbf7] px-4 py-1.5 text-xs font-sans font-bold uppercase tracking-wider mt-2">
-                  <span>পৃষ্ঠা {{ currentPage?.page_no }}: {{ currentPage?.title }}</span>
-                  <span>{{ currentPage?.category }}</span>
-                  <span>ডিজিটাল ই-পেপার সংস্করণ</span>
-                </div>
-              </div>
-
-              <!-- BROADSHEET EDITORIAL CONTENT & HOTSPOT GRID -->
-              <div class="relative w-full" style="min-height: 980px;">
-                <!-- REALISTIC NEWSPAPER LAYOUT BACKDROP BASED ON ACTIVE PAGE -->
-                <div class="space-y-6">
-                  <!-- Top Section / Lead Articles Grid -->
-                  <div class="grid grid-cols-12 gap-5 pb-6 border-b-2 border-stone-800">
-                    <!-- Main Lead Story (Columns 1-8) -->
-                    <div 
-                      v-if="currentPage?.clippings?.[0]"
-                      @click="openClipping(currentPage.clippings[0])"
-                      class="col-span-8 pr-4 border-r border-stone-300 cursor-pointer group transition-all"
-                    >
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[10px] uppercase font-sans font-bold bg-red-600 text-white px-2 py-0.5 rounded-xs">
-                          {{ currentPage.clippings[0].kicker }}
-                        </span>
-                        <span class="text-[10px] font-sans text-stone-500 font-medium">
-                          {{ currentPage.clippings[0].author }}
-                        </span>
-                      </div>
-
-                      <h3 class="text-2xl font-black leading-snug text-stone-900 group-hover:text-red-700 transition font-serif mb-2.5">
-                        {{ currentPage.clippings[0].title }}
-                      </h3>
-
-                      <!-- Photo & Caption -->
-                      <div class="mb-3 overflow-hidden border border-stone-400 bg-stone-200 relative">
-                        <img 
-                          :src="currentPage.clippings[0].image" 
-                          :alt="currentPage.clippings[0].title"
-                          class="w-full h-56 object-cover filter contrast-105 group-hover:scale-102 transition duration-300"
-                        />
-                        <div class="p-1.5 bg-stone-100 text-[10px] font-sans text-stone-600 italic border-t border-stone-300 leading-tight">
-                          {{ currentPage.clippings[0].caption }}
-                        </div>
-                        <div class="absolute top-2 right-2 bg-stone-900/80 text-white text-[10px] font-sans px-2 py-0.5 rounded backdrop-blur-xs flex items-center gap-1">
-                          <span>🔍 খবরটি পড়তে ক্লিক করুন</span>
-                        </div>
-                      </div>
-
-                      <!-- Multi-column newspaper paragraph simulation -->
-                      <div class="grid grid-cols-2 gap-4 text-xs font-serif text-stone-800 leading-relaxed text-justify">
-                        <p>
-                          <span class="float-left text-3xl font-black leading-none mr-2 text-stone-900 font-serif">স</span>
-                          {{ currentPage.clippings[0].summary }}
-                        </p>
-                        <p class="text-stone-600">
-                          সংশ্লিষ্ট নীতিনির্ধারকদের বরাত দিয়ে জানানো হয়েছে, মাঠপর্যায়ে কাজের কঠোর জবাবদিহিতা নিশ্চিত করা হবে। কাজের গতি তদারকি করতে আধুনিক সফটওয়্যার মনিটরিং ব্যবহৃত হচ্ছে... 
-                          <span class="text-red-700 font-bold group-hover:underline block mt-1 font-sans text-[11px]">[বিস্তারিত কাটিং পড়ুন ➔]</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <!-- Right Secondary Story (Columns 9-12) -->
-                    <div 
-                      v-if="currentPage?.clippings?.[1]"
-                      @click="openClipping(currentPage.clippings[1])"
-                      class="col-span-4 pl-1 cursor-pointer group transition-all flex flex-col justify-between"
-                    >
-                      <div>
-                        <div class="text-[10px] uppercase font-sans font-bold text-red-600 mb-1">
-                          {{ currentPage.clippings[1].kicker }}
-                        </div>
-                        <h4 class="text-lg font-bold leading-snug text-stone-900 group-hover:text-red-700 transition font-serif mb-2">
-                          {{ currentPage.clippings[1].title }}
-                        </h4>
-
-                        <div class="mb-2.5 overflow-hidden border border-stone-300 bg-stone-200">
-                          <img 
-                            :src="currentPage.clippings[1].image" 
-                            :alt="currentPage.clippings[1].title"
-                            class="w-full h-36 object-cover filter contrast-105 group-hover:scale-102 transition"
-                          />
-                        </div>
-
-                        <p class="text-[11px] font-serif text-stone-700 leading-normal text-justify mb-2">
-                          {{ currentPage.clippings[1].summary }}
-                        </p>
-                      </div>
-
-                      <div class="pt-2 border-t border-stone-200 text-right">
-                        <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
-                          কাটিং দেখুন ➔
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Bottom Section / Additional Hotspot Articles -->
-                  <div class="grid grid-cols-12 gap-5 pt-2">
-                    <!-- Bottom Left Story (Columns 1-6) -->
-                    <div 
-                      v-if="currentPage?.clippings?.[2]"
-                      @click="openClipping(currentPage.clippings[2])"
-                      class="col-span-6 pr-4 border-r border-stone-300 cursor-pointer group transition"
-                    >
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[10px] uppercase font-sans font-bold bg-stone-800 text-white px-1.5 py-0.5 rounded-xs">
-                          {{ currentPage.clippings[2].kicker }}
-                        </span>
-                        <span class="text-[10px] font-sans text-stone-500">
-                          {{ currentPage.clippings[2].author }}
-                        </span>
-                      </div>
-                      <h4 class="text-base font-bold text-stone-900 group-hover:text-red-700 transition mb-2">
-                        {{ currentPage.clippings[2].title }}
-                      </h4>
-                      <div class="flex gap-3">
-                        <img 
-                          :src="currentPage.clippings[2].image" 
-                          class="w-24 h-20 object-cover border border-stone-300 shrink-0"
-                        />
-                        <p class="text-[11px] font-serif text-stone-700 leading-relaxed text-justify">
-                          {{ currentPage.clippings[2].summary }}
-                        </p>
-                      </div>
-                      <div class="mt-2 text-right">
-                        <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
-                          ক্লিক করে বিস্তারিত পড়ুন ➔
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Bottom Right Story (Columns 7-12) -->
-                    <div 
-                      v-if="currentPage?.clippings?.[3]"
-                      @click="openClipping(currentPage.clippings[3])"
-                      class="col-span-6 pl-2 cursor-pointer group transition"
-                    >
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[10px] uppercase font-sans font-bold bg-stone-800 text-white px-1.5 py-0.5 rounded-xs">
-                          {{ currentPage.clippings[3].kicker }}
-                        </span>
-                        <span class="text-[10px] font-sans text-stone-500">
-                          {{ currentPage.clippings[3].author }}
-                        </span>
-                      </div>
-                      <h4 class="text-base font-bold text-stone-900 group-hover:text-red-700 transition mb-2">
-                        {{ currentPage.clippings[3].title }}
-                      </h4>
-                      <div class="flex gap-3">
-                        <img 
-                          :src="currentPage.clippings[3].image" 
-                          class="w-24 h-20 object-cover border border-stone-300 shrink-0"
-                        />
-                        <p class="text-[11px] font-serif text-stone-700 leading-relaxed text-justify">
-                          {{ currentPage.clippings[3].summary }}
-                        </p>
-                      </div>
-                      <div class="mt-2 text-right">
-                        <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
-                          ক্লিক করে বিস্তারিত পড়ুন ➔
-                        </span>
-                      </div>
-                    </div>
-
-                    <!-- Fallback Notice Box if fewer articles -->
-                    <div 
-                      v-if="!currentPage?.clippings?.[3]"
-                      class="col-span-6 pl-2 p-3 bg-stone-100 border border-dashed border-stone-400 rounded flex flex-col justify-center items-center text-center"
-                    >
-                      <span class="text-[10px] font-sans uppercase font-bold text-stone-400 tracking-wider">ই-পেপার নোটিস</span>
-                      <h5 class="text-sm font-bold text-stone-800 mt-1">দৈনিক বাংলা ই-পেপার আর্কাইভে স্বাগতম</h5>
-                      <p class="text-[11px] text-stone-600 mt-1">যেকোনো সংবাদে ক্লিক করে সম্পূর্ণ প্রতিবেদন পড়ুন, অডিও শুনুন ও সোশ্যাল মিডিয়ায় শেয়ার করুন।</p>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- INTERACTIVE OVERLAY HOTSPOT ZONES -->
-                <template v-if="showHotspots">
-                  <div
-                    v-for="clip in currentPage?.clippings"
-                    :key="clip.id"
-                    @click.stop="openClipping(clip)"
-                    :style="{
-                      top: `${clip.hotspot.top}%`,
-                      left: `${clip.hotspot.left}%`,
-                      width: `${clip.hotspot.width}%`,
-                      height: `${clip.hotspot.height}%`
-                    }"
-                    class="absolute border-2 border-dashed border-red-500/70 hover:border-red-600 bg-red-500/5 hover:bg-red-500/15 cursor-pointer transition-all duration-150 rounded flex flex-col justify-start items-end p-2 group pointer-events-auto"
-                    :title="`ক্লিক করে পড়ুন: ${clip.title}`"
-                  >
-                    <div class="bg-red-600 text-white text-[10px] font-sans font-bold px-2 py-0.5 rounded shadow-sm opacity-90 group-hover:opacity-100 flex items-center gap-1">
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                      </svg>
-                      <span>{{ clip.category }}</span>
-                    </div>
-                  </div>
-                </template>
-              </div>
-
-              <!-- Broadsheet Footer & Barcode -->
-              <div class="border-t-2 border-stone-900 pt-3 mt-6 flex items-center justify-between text-[10px] font-sans text-stone-500">
+            <!-- NEWSPAPER MASTHEAD (HEADER) -->
+            <div class="border-b-4 border-stone-900 pb-3 mb-4">
+              <!-- Top Info Bar -->
+              <div class="flex flex-col sm:flex-row items-center justify-between gap-1 text-[10px] sm:text-[11px] font-sans text-stone-600 border-b border-stone-300 pb-1.5 mb-2 text-center sm:text-left">
                 <div>
-                  © ২০২৬ দৈনিক বাংলা পাবলিশিং লিমিটেড। সর্বস্বত্ব সংরক্ষিত।
+                  <strong>বর্ষ ৫০</strong> • <strong>সংখ্যা ২৭৪</strong> • <strong>রেজিস্ট্রেশন নং: ডিএ-১২৫</strong>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span class="font-mono tracking-widest text-stone-700">|||| | ||||| || |||||| ||| |||</span>
-                  <span>পৃষ্ঠা {{ currentPage?.page_no }} এর সমাপ্তি</span>
+                <div>
+                  ঢাকা, বাংলাদেশ • {{ currentPage?.edition_date || epaperData?.edition_date_formatted }} • মূল্য: ১০.০০ টাকা
                 </div>
+                <div class="font-bold text-red-700 uppercase tracking-widest">
+                  {{ currentPage?.edition || 'ঢাকা সংস্করণ' }}
+                </div>
+              </div>
+
+              <!-- Big Bold Masthead Title -->
+              <div class="text-center py-2 relative">
+                <div class="text-[10px] sm:text-xs font-sans tracking-widest text-stone-500 uppercase mb-1">
+                  স্বাধীন ও নিরপেক্ষ সাংবাদিকতার পথিকৃৎ
+                </div>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-stone-900 font-serif">
+                  দৈনিক বাংলা
+                </h2>
+                <div class="text-[10px] sm:text-[11px] font-sans text-stone-600 italic mt-1">
+                  DAINIK BANGLA • সত্য ও ন্যায়ের নির্ভীক কণ্ঠস্বর
+                </div>
+              </div>
+
+              <!-- Page Subhead Ribbon -->
+              <div class="flex flex-wrap items-center justify-between gap-2 bg-stone-900 text-[#fcfbf7] px-3 sm:px-4 py-1.5 text-[10px] sm:text-xs font-sans font-bold uppercase tracking-wider mt-2">
+                <span>পৃষ্ঠা {{ currentPage?.page_no }}: {{ currentPage?.title }}</span>
+                <span>{{ currentPage?.category }}</span>
+                <span class="hidden sm:inline">ডিজিটাল ই-পেপার সংস্করণ</span>
+              </div>
+            </div>
+
+            <!-- BROADSHEET EDITORIAL CONTENT GRID -->
+            <div class="relative w-full">
+              <div class="space-y-6">
+                <!-- Top Section / Lead Articles Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 pb-6 border-b-2 border-stone-800">
+                  <!-- Main Lead Story (Columns 1-8) -->
+                  <div 
+                    v-if="currentPage?.clippings?.[0]"
+                    @click="openClipping(currentPage.clippings[0])"
+                    class="md:col-span-8 md:pr-5 md:border-r border-b md:border-b-0 border-stone-300 pb-5 md:pb-0 cursor-pointer group transition-all hover:bg-stone-200/40 rounded-lg p-2 -m-2"
+                  >
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] uppercase font-sans font-bold bg-red-600 text-white px-2 py-0.5 rounded-xs">
+                        {{ currentPage.clippings[0].kicker }}
+                      </span>
+                      <span class="text-[10px] font-sans text-stone-500 font-medium">
+                        {{ currentPage.clippings[0].author }}
+                      </span>
+                    </div>
+
+                    <h3 class="text-xl sm:text-2xl font-black leading-snug text-stone-900 group-hover:text-red-700 transition font-serif mb-2.5">
+                      {{ currentPage.clippings[0].title }}
+                    </h3>
+
+                    <!-- Photo & Caption -->
+                    <div class="mb-3 overflow-hidden border border-stone-400 bg-stone-200 relative">
+                      <img 
+                        :src="currentPage.clippings[0].image" 
+                        :alt="currentPage.clippings[0].title"
+                        class="w-full h-44 sm:h-60 object-cover filter contrast-105 group-hover:scale-102 transition duration-300"
+                      />
+                      <div class="p-1.5 bg-stone-100 text-[10px] font-sans text-stone-600 italic border-t border-stone-300 leading-tight">
+                        {{ currentPage.clippings[0].caption }}
+                      </div>
+                    </div>
+
+                    <!-- Multi-column newspaper paragraph simulation -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-[13px] font-serif text-stone-800 leading-relaxed text-justify">
+                      <p>
+                        <span class="float-left text-3xl font-black leading-none mr-2 text-stone-900 font-serif">স</span>
+                        {{ currentPage.clippings[0].summary }}
+                      </p>
+                      <p class="text-stone-600">
+                        সংশ্লিষ্ট নীতিনির্ধারকদের বরাত দিয়ে জানানো হয়েছে, মাঠপর্যায়ে কাজের কঠোর জবাবদিহিতা নিশ্চিত করা হবে। কাজের গতি তদারকি করতে আধুনিক সফটওয়্যার মনিটরিং ব্যবহৃত হচ্ছে... 
+                        <span class="text-red-700 font-bold group-hover:underline block mt-1 font-sans text-[11px]">[বিস্তারিত প্রতিবেদন পড়ুন ➔]</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Right Secondary Story (Columns 9-12) -->
+                  <div 
+                    v-if="currentPage?.clippings?.[1]"
+                    @click="openClipping(currentPage.clippings[1])"
+                    class="md:col-span-4 md:pl-1 cursor-pointer group transition-all flex flex-col justify-between hover:bg-stone-200/40 rounded-lg p-2 -m-2"
+                  >
+                    <div>
+                      <div class="text-[10px] uppercase font-sans font-bold text-red-600 mb-1">
+                        {{ currentPage.clippings[1].kicker }}
+                      </div>
+                      <h4 class="text-lg font-bold leading-snug text-stone-900 group-hover:text-red-700 transition font-serif mb-2">
+                        {{ currentPage.clippings[1].title }}
+                      </h4>
+
+                      <div class="mb-2.5 overflow-hidden border border-stone-300 bg-stone-200">
+                        <img 
+                          :src="currentPage.clippings[1].image" 
+                          :alt="currentPage.clippings[1].title"
+                          class="w-full h-40 sm:h-36 object-cover filter contrast-105 group-hover:scale-102 transition"
+                        />
+                      </div>
+
+                      <p class="text-xs sm:text-[11px] font-serif text-stone-700 leading-relaxed text-justify mb-2">
+                        {{ currentPage.clippings[1].summary }}
+                      </p>
+                    </div>
+
+                    <div class="pt-2 border-t border-stone-200 text-right">
+                      <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
+                        বিস্তারিত পড়ুন ➔
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom Section / Additional Articles -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 pt-2">
+                  <!-- Bottom Left Story -->
+                  <div 
+                    v-if="currentPage?.clippings?.[2]"
+                    @click="openClipping(currentPage.clippings[2])"
+                    :class="[
+                      currentPage?.clippings?.[3]
+                        ? 'md:col-span-6 md:pr-4 md:border-r border-b md:border-b-0 border-stone-300 pb-5 md:pb-0'
+                        : 'md:col-span-12',
+                      'cursor-pointer group transition hover:bg-stone-200/40 rounded-lg p-2 -m-2'
+                    ]"
+                  >
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] uppercase font-sans font-bold bg-stone-800 text-white px-1.5 py-0.5 rounded-xs">
+                        {{ currentPage.clippings[2].kicker }}
+                      </span>
+                      <span class="text-[10px] font-sans text-stone-500">
+                        {{ currentPage.clippings[2].author }}
+                      </span>
+                    </div>
+                    <h4 class="text-base sm:text-lg font-bold text-stone-900 group-hover:text-red-700 transition mb-2">
+                      {{ currentPage.clippings[2].title }}
+                    </h4>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <img 
+                        :src="currentPage.clippings[2].image" 
+                        :alt="currentPage.clippings[2].title"
+                        class="w-full sm:w-28 h-36 sm:h-24 object-cover border border-stone-300 shrink-0"
+                      />
+                      <p class="text-xs sm:text-[11px] font-serif text-stone-700 leading-relaxed text-justify">
+                        {{ currentPage.clippings[2].summary }}
+                      </p>
+                    </div>
+                    <div class="mt-2 text-right">
+                      <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
+                        ক্লিক করে বিস্তারিত পড়ুন ➔
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Right Story -->
+                  <div 
+                    v-if="currentPage?.clippings?.[3]"
+                    @click="openClipping(currentPage.clippings[3])"
+                    class="md:col-span-6 md:pl-2 cursor-pointer group transition hover:bg-stone-200/40 rounded-lg p-2 -m-2"
+                  >
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-[10px] uppercase font-sans font-bold bg-stone-800 text-white px-1.5 py-0.5 rounded-xs">
+                        {{ currentPage.clippings[3].kicker }}
+                      </span>
+                      <span class="text-[10px] font-sans text-stone-500">
+                        {{ currentPage.clippings[3].author }}
+                      </span>
+                    </div>
+                    <h4 class="text-base sm:text-lg font-bold text-stone-900 group-hover:text-red-700 transition mb-2">
+                      {{ currentPage.clippings[3].title }}
+                    </h4>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <img 
+                        :src="currentPage.clippings[3].image" 
+                        :alt="currentPage.clippings[3].title"
+                        class="w-full sm:w-28 h-36 sm:h-24 object-cover border border-stone-300 shrink-0"
+                      />
+                      <p class="text-xs sm:text-[11px] font-serif text-stone-700 leading-relaxed text-justify">
+                        {{ currentPage.clippings[3].summary }}
+                      </p>
+                    </div>
+                    <div class="mt-2 text-right">
+                      <span class="text-[10px] font-sans font-bold text-red-700 group-hover:underline">
+                        ক্লিক করে বিস্তারিত পড়ুন ➔
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Broadsheet Footer & Barcode -->
+            <div class="mt-8 pt-3 border-t-2 border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[10px] font-sans text-stone-500 text-center sm:text-left">
+              <div>
+                © ২০২৬ দৈনিক বাংলা পাবলিশিং লিমিটেড। সর্বস্বত্ব সংরক্ষিত।
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono tracking-widest text-stone-700">|||| | ||||| || |||||| ||| |||</span>
+                <span>পৃষ্ঠা {{ currentPage?.page_no }} এর সমাপ্তি</span>
               </div>
             </div>
           </div>
@@ -570,15 +533,6 @@
               <span class="font-medium text-gray-600">মোট {{ currentPage?.clippings?.length || 0 }}টি প্রতিবেদন</span>
             </div>
             <span class="text-stone-500 hidden sm:inline">মোবাইল-বান্ধব সহজ পাঠযোগ্য সংস্করণ</span>
-          </div>
-
-          <!-- Mobile Swipe Hint -->
-          <div class="flex sm:hidden justify-center">
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-200/70 text-stone-700 rounded-full text-[11px] font-medium shadow-2xs">
-              <span>‹</span>
-              <span>সোয়াইপ করে পাতা পরিবর্তন করুন</span>
-              <span>›</span>
-            </div>
           </div>
 
           <!-- Vertical Article Feed Cards -->
@@ -675,8 +629,34 @@
         </div>
       </div>
 
+      <!-- IN-FLOW MOBILE/TABLET PAGE NAVIGATION BAR (Below Newspaper Canvas) -->
+      <div class="no-print lg:hidden bg-white border-t border-gray-200 px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+        <button
+          @click="prevPage"
+          :disabled="activePage === 0"
+          class="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+        >
+          ‹ পূর্ববর্তী
+        </button>
+
+        <button
+          @click="openBottomSheet"
+          class="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-bold text-red-700 flex items-center justify-center gap-1.5 border border-red-200 transition cursor-pointer"
+        >
+          <span>📑 পৃষ্ঠা {{ activePage + 1 }}/{{ epaperData?.pages?.length || 6 }} • সকল পাতা</span>
+        </button>
+
+        <button
+          @click="nextPage"
+          :disabled="activePage === (epaperData?.pages?.length || 1) - 1"
+          class="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+        >
+          পরবর্তী ›
+        </button>
+      </div>
+
       <!-- BOTTOM PAGE THUMBNAILS CAROUSEL / STRIP (Desktop & Tablet) -->
-      <div class="hidden sm:block bg-white border-t border-gray-200 p-4">
+      <div class="no-print hidden sm:block bg-white border-t border-gray-200 p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
             <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -732,7 +712,7 @@
     </div>
 
     <!-- BOTTOM SPONSORED AD BANNER (Digital Monetization) -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-950 via-slate-900 to-rose-950 text-white p-4 sm:p-5 shadow-sm border border-pink-900/40">
+    <div class="no-print relative overflow-hidden rounded-2xl bg-gradient-to-r from-pink-950 via-slate-900 to-rose-950 text-white p-4 sm:p-5 shadow-sm border border-pink-900/40">
       <div class="flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <span class="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-pink-500 text-white rounded">
@@ -764,54 +744,11 @@
       </div>
     </div>
 
-    <!-- ================= MOBILE STICKY BOTTOM BAR ================= -->
-    <div class="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 py-2.5 px-4 shadow-xl md:hidden">
-      <div class="max-w-md mx-auto flex items-center justify-between gap-2">
-        <!-- Prev Button -->
-        <button
-          @click="prevPage"
-          :disabled="activePage === 0"
-          class="p-2 rounded-xl border border-gray-200 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 transition active:scale-95"
-          title="পূর্ববর্তী পাতা"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-
-        <!-- Center Button: Open Bottom Sheet Drawer -->
-        <button
-          @click="openBottomSheet"
-          class="flex-1 py-2 px-3 bg-stone-100 hover:bg-stone-200 active:bg-stone-300 rounded-xl text-xs font-bold text-gray-800 flex items-center justify-center gap-1.5 border border-gray-300 shadow-2xs transition"
-        >
-          <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-          </svg>
-          <span>পৃষ্ঠা নির্বাচন করুন ({{ activePage + 1 }}/{{ epaperData?.pages?.length || 6 }})</span>
-          <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-          </svg>
-        </button>
-
-        <!-- Next Button -->
-        <button
-          @click="nextPage"
-          :disabled="activePage === (epaperData?.pages?.length || 1) - 1"
-          class="p-2 rounded-xl border border-gray-200 text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 transition active:scale-95"
-          title="পরবর্তী পাতা"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
     <!-- ================= MOBILE BOTTOM SHEET THUMBNAIL DRAWER ================= -->
     <Transition name="drawer-slide">
       <div 
         v-if="showBottomSheet" 
-        class="fixed inset-0 z-50 overflow-hidden flex flex-col justify-end"
+        class="no-print fixed inset-0 z-50 overflow-hidden flex flex-col justify-end"
       >
         <!-- Backdrop Overlay -->
         <div 
@@ -896,15 +833,15 @@
     <Transition name="modal-fade">
       <div 
         v-if="selectedClipping" 
-        class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+        class="epaper-print-modal-backdrop fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
         @click.self="closeClipping"
       >
         <div 
-          class="bg-[#fdfcf9] rounded-2xl shadow-2xl max-w-3xl w-full border border-stone-300 overflow-hidden transform transition-all flex flex-col max-h-[92vh]"
+          class="epaper-print-modal-card bg-[#fdfcf9] rounded-2xl shadow-2xl max-w-3xl w-full border border-stone-300 overflow-hidden transform transition-all flex flex-col max-h-[92vh]"
           @keydown.esc="closeClipping"
         >
           <!-- Modal Top Bar -->
-          <div class="bg-stone-900 text-white px-5 sm:px-6 py-3.5 flex items-center justify-between border-b border-stone-800">
+          <div class="no-print bg-stone-900 text-white px-5 sm:px-6 py-3.5 flex items-center justify-between border-b border-stone-800">
             <div class="flex items-center gap-2 sm:gap-3">
               <span class="px-2 py-0.5 bg-red-600 text-white text-[11px] font-bold rounded uppercase tracking-wider">
                 {{ selectedClipping.category }}
@@ -944,7 +881,7 @@
           </div>
 
           <!-- Modal Scrollable Content -->
-          <div class="p-5 sm:p-8 overflow-y-auto space-y-4 flex-1 font-serif">
+          <div class="epaper-print-modal-body p-5 sm:p-8 overflow-y-auto space-y-4 flex-1 font-serif">
             <!-- Article Header -->
             <div class="border-b border-stone-300 pb-4">
               <div class="text-xs font-sans font-bold text-red-600 uppercase tracking-wider mb-1">
@@ -969,7 +906,7 @@
             </div>
 
             <!-- BENGALI AUDIO VOICE READER (Web Speech API) -->
-            <div class="bg-gradient-to-r from-red-50 via-amber-50 to-red-50 border border-red-200/90 rounded-2xl p-3.5 sm:p-4 my-2 flex flex-col sm:flex-row items-center justify-between gap-3 font-sans">
+            <div class="no-print bg-gradient-to-r from-red-50 via-amber-50 to-red-50 border border-red-200/90 rounded-2xl p-3.5 sm:p-4 my-2 flex flex-col sm:flex-row items-center justify-between gap-3 font-sans">
               <div class="flex items-center gap-3 w-full sm:w-auto">
                 <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-xs shrink-0">
                   <svg v-if="!isSpeaking" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1053,7 +990,7 @@
           </div>
 
           <!-- Modal Footer: Social Share & Download Article -->
-          <div class="bg-stone-100 border-t border-stone-300 px-5 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 font-sans text-xs">
+          <div class="no-print bg-stone-100 border-t border-stone-300 px-5 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 font-sans text-xs">
             <!-- Share Buttons -->
             <div class="flex flex-wrap items-center gap-2">
               <!-- Native Share API Button -->
@@ -1097,10 +1034,10 @@
             <div class="flex items-center gap-2">
               <button 
                 @click="printArticle"
-                class="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-semibold transition hidden sm:inline-block"
-                title="প্রিন্ট করুন"
+                class="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-lg font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                title="প্রিন্ট বা PDF সংরক্ষণ করুন"
               >
-                🖨️ প্রিন্ট
+                <span>🖨️ প্রিন্ট / PDF</span>
               </button>
               <button 
                 @click="closeClipping"
@@ -1176,7 +1113,7 @@
     <Transition name="toast-fade">
       <div 
         v-if="toastMessage" 
-        class="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-stone-900/90 backdrop-blur-md text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg border border-stone-700 flex items-center gap-2 pointer-events-none"
+        class="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-stone-900/90 backdrop-blur-md text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg border border-stone-700 flex items-center gap-2 pointer-events-none"
       >
         <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
         <span>{{ toastMessage }}</span>
@@ -1194,7 +1131,6 @@ const viewMode = ref('broadsheet')
 // Navigation & Viewer State
 const activePage = ref(0)
 const zoomLevel = ref(100)
-const showHotspots = ref(true)
 const isFullscreen = ref(false)
 const selectedClipping = ref(null)
 const articleFontSize = ref(17)
@@ -1891,10 +1827,278 @@ const copyArticleLink = async (clip) => {
   }
 }
 
-const printArticle = () => {
-  if (import.meta.client) {
-    window.print()
+// Helper: Render HTML inside an offscreen hidden iframe and trigger clean native print/PDF
+const printHtmlInHiddenIframe = (htmlContent) => {
+  if (!import.meta.client) return
+
+  const existingIframe = document.getElementById('epaper-print-iframe')
+  if (existingIframe) {
+    existingIframe.remove()
   }
+
+  const iframe = document.createElement('iframe')
+  iframe.id = 'epaper-print-iframe'
+  iframe.style.position = 'fixed'
+  iframe.style.right = '0'
+  iframe.style.bottom = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+  iframe.style.visibility = 'hidden'
+  document.body.appendChild(iframe)
+
+  const doc = iframe.contentWindow?.document || iframe.contentDocument
+  if (!doc) return
+
+  doc.open()
+  doc.write(htmlContent)
+  doc.close()
+
+  let printed = false
+  const executePrint = () => {
+    if (printed) return
+    printed = true
+    try {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+    } catch {
+      window.print()
+    }
+    setTimeout(() => {
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe)
+      }
+    }, 1500)
+  }
+
+  // Wait for any images inside the iframe to load or fallback after 300ms
+  const images = Array.from(doc.images || [])
+  if (images.length === 0) {
+    setTimeout(executePrint, 150)
+  } else {
+    let loadedCount = 0
+    const onImgDone = () => {
+      loadedCount++
+      if (loadedCount >= images.length) {
+        setTimeout(executePrint, 100)
+      }
+    }
+    images.forEach((img) => {
+      if (img.complete) {
+        onImgDone()
+      } else {
+        img.addEventListener('load', onImgDone, { once: true })
+        img.addEventListener('error', onImgDone, { once: true })
+      }
+    })
+    setTimeout(executePrint, 300)
+  }
+}
+
+// Single Clipped Article Print / Save as PDF via Hidden Iframe
+const printArticle = () => {
+  if (!import.meta.client || !selectedClipping.value) return
+
+  const clip = selectedClipping.value
+  const page = currentPage.value
+  const editionDate = page?.edition_date || epaperData.value?.edition_date_formatted || selectedDate.value
+  const editionName = page?.edition || epaperData.value?.edition_name || 'ঢাকা সংস্করণ'
+  const pageNo = page?.page_no || 1
+  const pageTitle = page?.title || 'প্রথম পাতা'
+
+  const html = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <title>${clip.title} — দৈনিক বাংলা ই-পেপার</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #1c1917;
+      font-family: 'Noto Serif Bengali', 'SolaimanLipi', 'Kalpurush', Georgia, serif;
+      line-height: 1.65;
+    }
+    .clipping-sheet {
+      max-width: 100%;
+      margin: 0 auto;
+      border: 1.5px solid #292524;
+      padding: 20px 24px;
+      background: #fcfbf7;
+    }
+    .masthead {
+      border-bottom: 3px double #1c1917;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .masthead-meta {
+      display: flex;
+      justify-content: space-between;
+      font-family: sans-serif;
+      font-size: 11px;
+      color: #57534e;
+      border-bottom: 1px solid #d6d3d1;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    .masthead-title {
+      font-size: 32px;
+      font-weight: 900;
+      margin: 4px 0;
+      color: #1c1917;
+      letter-spacing: -0.5px;
+    }
+    .masthead-sub {
+      font-family: sans-serif;
+      font-size: 11px;
+      color: #dc2626;
+      font-weight: 700;
+    }
+    .badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-family: sans-serif;
+    }
+    .badge-category {
+      background: #dc2626;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .badge-kicker {
+      font-size: 12px;
+      font-weight: 700;
+      color: #b91c1c;
+    }
+    .headline {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.35;
+      color: #1c1917;
+      margin: 0 0 10px 0;
+    }
+    .byline {
+      font-family: sans-serif;
+      font-size: 11.5px;
+      color: #57534e;
+      border-top: 1px solid #e7e5e4;
+      border-bottom: 1px solid #e7e5e4;
+      padding: 6px 0;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .figure {
+      margin: 0 0 16px 0;
+      border: 1px solid #d6d3d1;
+      background: #f5f5f4;
+    }
+    .figure img {
+      width: 100%;
+      max-height: 270px;
+      object-fit: cover;
+      display: block;
+    }
+    .caption {
+      padding: 6px 10px;
+      font-family: sans-serif;
+      font-size: 11px;
+      color: #57534e;
+      font-style: italic;
+      border-top: 1px solid #e7e5e4;
+      background: #fafaf9;
+    }
+    .summary-box {
+      background: #f5f5f4;
+      border-left: 3px solid #dc2626;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #292524;
+      margin-bottom: 14px;
+    }
+    .article-body {
+      font-size: 15px;
+      color: #1c1917;
+      text-align: justify;
+    }
+    .article-body p {
+      margin: 0 0 12px 0;
+    }
+    .footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1.5px solid #292524;
+      display: flex;
+      justify-content: space-between;
+      font-family: sans-serif;
+      font-size: 10px;
+      color: #78716c;
+    }
+  </style>
+</head>
+<body>
+  <div class="clipping-sheet">
+    <div class="masthead">
+      <div class="masthead-meta">
+        <span>${editionName} • পৃষ্ঠা ${pageNo} (${pageTitle})</span>
+        <span>${editionDate}</span>
+        <span>দৈনিক বাংলা ডিজিটাল ই-পেপার ক্লিপিং</span>
+      </div>
+      <div class="masthead-title">দৈনিক বাংলা</div>
+      <div class="masthead-sub">DAINIK BANGLA • সত্য ও ন্যায়ের নির্ভীক কণ্ঠস্বর</div>
+    </div>
+
+    <div class="badges">
+      ${clip.category ? `<span class="badge-category">${clip.category}</span>` : ''}
+      ${clip.kicker ? `<span class="badge-kicker">${clip.kicker}</span>` : ''}
+    </div>
+
+    <h1 class="headline">${clip.title}</h1>
+
+    <div class="byline">
+      <span><strong>প্রতিবেদক:</strong> ${clip.author || 'নিজস্ব প্রতিবেদক'}</span>
+      <span>প্রকাশকাল: ${clip.published_at || editionDate}</span>
+    </div>
+
+    ${clip.image ? `
+      <div class="figure">
+        <img src="${clip.image}" alt="${clip.title}" />
+        ${clip.caption ? `<div class="caption">${clip.caption}</div>` : ''}
+      </div>
+    ` : ''}
+
+    ${clip.summary ? `<div class="summary-box">${clip.summary}</div>` : ''}
+
+    <div class="article-body">
+      ${clip.content || ''}
+    </div>
+
+    <div class="footer">
+      <span>© ২০২৬ দৈনিক বাংলা পাবলিশিং লিমিটেড • সর্বস্বত্ব সংরক্ষিত</span>
+      <span>সূত্র: দৈনিক বাংলা ই-পেপার (পৃষ্ঠা ${pageNo})</span>
+    </div>
+  </div>
+</body>
+</html>`
+
+  showToastMessage('প্রিন্ট / PDF ডায়ালগ প্রস্তুত করা হচ্ছে...')
+  printHtmlInHiddenIframe(html)
 }
 
 const openShareModal = () => {
@@ -1946,25 +2150,460 @@ const copyShareUrl = async () => {
   }
 }
 
-// Full Page PDF and JPG Image Download
-const downloadPage = (format) => {
-  if (!import.meta.client) return
-  const pageNo = currentPage.value?.page_no || 1
-  const filename = `dainik-bangla-epaper-page-${pageNo}-${selectedDate.value}.${format}`
-  
-  const fileUrl = format === 'pdf'
-    ? (currentPage.value?.pdf_url || `/storage/epaper/pdf/page_${pageNo}.pdf`)
-    : (currentPage.value?.image_url || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1600&q=80')
+// Helper: Generate & Download High-Resolution Broadsheet Page JPG via HTML5 Canvas
+const downloadBroadsheetCanvasImage = (page, filename) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1200
+  canvas.height = 1650
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
 
+  // Cream newspaper background
+  ctx.fillStyle = '#fcfbf7'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // Outer border
+  ctx.strokeStyle = '#292524'
+  ctx.lineWidth = 4
+  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60)
+
+  // Top metadata bar
+  ctx.fillStyle = '#57534e'
+  ctx.font = 'bold 16px sans-serif'
+  ctx.fillText('বর্ষ ৫০ • সংখ্যা ২৭৪ • রেজিস্ট্রেশন নং: ডিএ-১২৫', 60, 75)
+  ctx.fillText(`${page?.edition_date || epaperData.value?.edition_date_formatted || selectedDate.value}`, 480, 75)
+  ctx.fillStyle = '#b91c1c'
+  ctx.fillText(`${page?.edition || 'ঢাকা সংস্করণ'}`, 980, 75)
+
+  // Divider
+  ctx.strokeStyle = '#d6d3d1'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(60, 92)
+  ctx.lineTo(canvas.width - 60, 92)
+  ctx.stroke()
+
+  // Masthead Title
+  ctx.fillStyle = '#1c1917'
+  ctx.font = '900 68px serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('দৈনিক বাংলা', canvas.width / 2, 165)
+
+  ctx.fillStyle = '#57534e'
+  ctx.font = 'italic 16px sans-serif'
+  ctx.fillText('DAINIK BANGLA • সত্য ও ন্যায়ের নির্ভীক কণ্ঠস্বর', canvas.width / 2, 195)
+
+  // Page Subhead Ribbon
+  ctx.fillStyle = '#1c1917'
+  ctx.fillRect(60, 215, canvas.width - 120, 42)
+  ctx.fillStyle = '#fcfbf7'
+  ctx.font = 'bold 18px sans-serif'
+  ctx.textAlign = 'left'
+  ctx.fillText(`পৃষ্ঠা ${page?.page_no || 1}: ${page?.title || 'প্রথম পাতা'}`, 80, 242)
+  ctx.textAlign = 'right'
+  ctx.fillText(`${page?.category || 'জাতীয়'} • ডিজিটাল ই-পেপার সংস্করণ`, canvas.width - 80, 242)
+
+  // Helper for wrapping text on canvas
+  ctx.textAlign = 'left'
+  const wrapText = (text, x, y, maxWidth, lineHeight, maxLines = 10) => {
+    const words = (text || '').split(' ')
+    let line = ''
+    let currentY = y
+    let lines = 0
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' '
+      const metrics = ctx.measureText(testLine)
+      if (metrics.width > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, currentY)
+        line = words[n] + ' '
+        currentY += lineHeight
+        lines++
+        if (lines >= maxLines - 1) break
+      } else {
+        line = testLine
+      }
+    }
+    if (line && lines < maxLines) {
+      ctx.fillText(line.trim(), x, currentY)
+      currentY += lineHeight
+    }
+    return currentY
+  }
+
+  // Render articles on canvas
+  const clippings = page?.clippings || []
+  let yCursor = 300
+
+  clippings.forEach((clip, idx) => {
+    // Kicker badge
+    ctx.fillStyle = idx === 0 ? '#dc2626' : '#292524'
+    ctx.font = 'bold 16px sans-serif'
+    ctx.fillText(`[${clip.kicker || clip.category || 'সংবাদ'}] • ${clip.author || 'নিজস্ব প্রতিবেদক'}`, 60, yCursor)
+    yCursor += 36
+
+    // Headline
+    ctx.fillStyle = '#1c1917'
+    ctx.font = idx === 0 ? 'bold 32px serif' : 'bold 26px serif'
+    yCursor = wrapText(clip.title, 60, yCursor, canvas.width - 120, idx === 0 ? 42 : 34, 3)
+    yCursor += 8
+
+    // Summary
+    ctx.fillStyle = '#44403c'
+    ctx.font = '20px serif'
+    yCursor = wrapText(clip.summary, 60, yCursor, canvas.width - 120, 30, 4)
+    yCursor += 10
+
+    // Body excerpt
+    const bodyText = stripHtml(clip.content)
+    ctx.fillStyle = '#57534e'
+    ctx.font = '18px serif'
+    yCursor = wrapText(bodyText, 60, yCursor, canvas.width - 120, 28, idx === 0 ? 5 : 3)
+    yCursor += 20
+
+    // Divider line
+    ctx.strokeStyle = '#d6d3d1'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(60, yCursor)
+    ctx.lineTo(canvas.width - 60, yCursor)
+    ctx.stroke()
+    yCursor += 38
+  })
+
+  // Footer
+  ctx.strokeStyle = '#1c1917'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(60, canvas.height - 95)
+  ctx.lineTo(canvas.width - 60, canvas.height - 95)
+  ctx.stroke()
+
+  ctx.fillStyle = '#57534e'
+  ctx.font = '15px sans-serif'
+  ctx.textAlign = 'left'
+  ctx.fillText('© ২০২৬ দৈনিক বাংলা পাবলিশিং লিমিটেড। সর্বস্বত্ব সংরক্ষিত।', 60, canvas.height - 60)
+  ctx.textAlign = 'right'
+  ctx.fillText(`পৃষ্ঠা ${page?.page_no || 1} এর সমাপ্তি`, canvas.width - 60, canvas.height - 60)
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
   const link = document.createElement('a')
-  link.href = fileUrl
+  link.href = dataUrl
   link.download = filename
-  link.target = '_blank'
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  
-  showToastMessage(`পৃষ্ঠা ${pageNo} (${format.toUpperCase()}) ডাউনলোড শুরু হয়েছে`)
+}
+
+// Full Page PDF (via Hidden Iframe Print Generator) and JPG Image Download
+const downloadPage = (format) => {
+  if (!import.meta.client) return
+  const page = currentPage.value
+  const pageNo = page?.page_no || 1
+  const editionDate = page?.edition_date || epaperData.value?.edition_date_formatted || selectedDate.value
+  const editionName = page?.edition || epaperData.value?.edition_name || 'ঢাকা সংস্করণ'
+
+  if (format === 'pdf') {
+    const lead = page?.clippings?.[0]
+    const secondary = page?.clippings?.[1]
+    const bottomLeft = page?.clippings?.[2]
+    const bottomRight = page?.clippings?.[3]
+
+    const html = `<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <title>পৃষ্ঠা ${pageNo}: ${page?.title || 'প্রথম পাতা'} — দৈনিক বাংলা ই-পেপার (${selectedDate.value})</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #1c1917;
+      font-family: 'Noto Serif Bengali', 'SolaimanLipi', 'Kalpurush', Georgia, serif;
+    }
+    .broadsheet {
+      background: #fcfbf7;
+      border: 1.5px solid #292524;
+      padding: 16px 20px;
+    }
+    .masthead {
+      border-bottom: 3px solid #1c1917;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .meta-bar {
+      display: flex;
+      justify-content: space-between;
+      font-family: sans-serif;
+      font-size: 10px;
+      color: #57534e;
+      border-bottom: 1px solid #d6d3d1;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+    .title-area {
+      text-align: center;
+      padding: 4px 0;
+    }
+    .title-slogan {
+      font-family: sans-serif;
+      font-size: 10px;
+      color: #78716c;
+      letter-spacing: 1px;
+    }
+    .title-main {
+      font-size: 38px;
+      font-weight: 900;
+      margin: 2px 0;
+      color: #1c1917;
+    }
+    .title-sub {
+      font-family: sans-serif;
+      font-size: 10px;
+      font-style: italic;
+      color: #57534e;
+    }
+    .ribbon {
+      background: #1c1917;
+      color: #fcfbf7;
+      padding: 5px 12px;
+      font-family: sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    .top-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #292524;
+    }
+    .lead-story {
+      border-right: 1px solid #d6d3d1;
+      padding-right: 16px;
+    }
+    .kicker {
+      display: inline-block;
+      background: #dc2626;
+      color: #ffffff;
+      font-family: sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      margin-bottom: 4px;
+    }
+    .kicker-alt {
+      color: #dc2626;
+      font-family: sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .lead-title {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.3;
+      margin: 4px 0 8px 0;
+    }
+    .lead-figure {
+      border: 1px solid #a8a29e;
+      background: #e7e5e4;
+      margin-bottom: 8px;
+    }
+    .lead-figure img {
+      width: 100%;
+      height: 185px;
+      object-fit: cover;
+      display: block;
+    }
+    .lead-caption {
+      font-family: sans-serif;
+      font-size: 9.5px;
+      color: #57534e;
+      font-style: italic;
+      padding: 4px 8px;
+      background: #f5f5f4;
+      border-top: 1px solid #d6d3d1;
+    }
+    .lead-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 12px;
+      line-height: 1.55;
+      text-align: justify;
+    }
+    .secondary-title {
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.35;
+      margin: 2px 0 8px 0;
+    }
+    .secondary-img {
+      width: 100%;
+      height: 125px;
+      object-fit: cover;
+      border: 1px solid #d6d3d1;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .story-text {
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #292524;
+      text-align: justify;
+    }
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: ${bottomRight ? '1fr 1fr' : '1fr'};
+      gap: 16px;
+      padding-top: 12px;
+    }
+    .bottom-left {
+      ${bottomRight ? 'border-right: 1px solid #d6d3d1; padding-right: 16px;' : ''}
+    }
+    .bottom-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin: 4px 0 6px 0;
+    }
+    .bottom-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .bottom-row img {
+      width: 100px;
+      height: 75px;
+      object-fit: cover;
+      border: 1px solid #d6d3d1;
+      flex-shrink: 0;
+    }
+    .footer {
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 2px solid #292524;
+      display: flex;
+      justify-content: space-between;
+      font-family: sans-serif;
+      font-size: 9.5px;
+      color: #57534e;
+    }
+  </style>
+</head>
+<body>
+  <div class="broadsheet">
+    <div class="masthead">
+      <div class="meta-bar">
+        <span><strong>বর্ষ ৫০</strong> • <strong>সংখ্যা ২৭৪</strong> • <strong>রেজিস্ট্রেশন নং: ডিএ-১২৫</strong></span>
+        <span>ঢাকা, বাংলাদেশ • ${editionDate} • মূল্য: ১০.০০ টাকা</span>
+        <span style="color: #b91c1c; font-weight: 700;">${editionName}</span>
+      </div>
+      <div class="title-area">
+        <div class="title-slogan">স্বাধীন ও নিরপেক্ষ সাংবাদিকতার পথিকৃৎ</div>
+        <div class="title-main">দৈনিক বাংলা</div>
+        <div class="title-sub">DAINIK BANGLA • সত্য ও ন্যায়ের নির্ভীক কণ্ঠস্বর</div>
+      </div>
+      <div class="ribbon">
+        <span>পৃষ্ঠা ${pageNo}: ${page?.title || 'প্রথম পাতা'}</span>
+        <span>${page?.category || 'জাতীয়'}</span>
+        <span>ডিজিটাল ই-পেপার সংস্করণ</span>
+      </div>
+    </div>
+
+    <div class="top-grid">
+      ${lead ? `
+        <div class="lead-story">
+          <div>
+            <span class="kicker">${lead.kicker || lead.category}</span>
+            <span style="font-family: sans-serif; font-size: 10px; color: #57534e; margin-left: 6px;">${lead.author || ''}</span>
+          </div>
+          <h2 class="lead-title">${lead.title}</h2>
+          ${lead.image ? `
+            <div class="lead-figure">
+              <img src="${lead.image}" alt="${lead.title}" />
+              ${lead.caption ? `<div class="lead-caption">${lead.caption}</div>` : ''}
+            </div>
+          ` : ''}
+          <div class="lead-cols">
+            <div><strong>সারসংক্ষেপ:</strong> ${lead.summary || ''}</div>
+            <div>${stripHtml(lead.content)}</div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${secondary ? `
+        <div>
+          <div class="kicker-alt">${secondary.kicker || secondary.category}</div>
+          <h3 class="secondary-title">${secondary.title}</h3>
+          ${secondary.image ? `<img class="secondary-img" src="${secondary.image}" alt="${secondary.title}" />` : ''}
+          <div class="story-text">
+            <p style="margin: 0 0 6px 0;"><strong>${secondary.author || 'নিজস্ব প্রতিবেদক'}:</strong> ${secondary.summary || ''}</p>
+            <p style="margin: 0;">${stripHtml(secondary.content)}</p>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+
+    ${bottomLeft ? `
+      <div class="bottom-grid">
+        <div class="bottom-left">
+          <div class="kicker-alt" style="color: #292524;">${bottomLeft.kicker || bottomLeft.category} • ${bottomLeft.author || ''}</div>
+          <h3 class="bottom-title">${bottomLeft.title}</h3>
+          <div class="bottom-row">
+            ${bottomLeft.image ? `<img src="${bottomLeft.image}" alt="${bottomLeft.title}" />` : ''}
+            <div class="story-text">
+              <p style="margin: 0 0 4px 0;">${bottomLeft.summary || ''}</p>
+              <p style="margin: 0;">${stripHtml(bottomLeft.content)}</p>
+            </div>
+          </div>
+        </div>
+
+        ${bottomRight ? `
+          <div>
+            <div class="kicker-alt" style="color: #292524;">${bottomRight.kicker || bottomRight.category} • ${bottomRight.author || ''}</div>
+            <h3 class="bottom-title">${bottomRight.title}</h3>
+            <div class="bottom-row">
+              ${bottomRight.image ? `<img src="${bottomRight.image}" alt="${bottomRight.title}" />` : ''}
+              <div class="story-text">
+                <p style="margin: 0 0 4px 0;">${bottomRight.summary || ''}</p>
+                <p style="margin: 0;">${stripHtml(bottomRight.content)}</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    <div class="footer">
+      <span>© ২০২৬ দৈনিক বাংলা পাবলিশিং লিমিটেড। সর্বস্বত্ব সংরক্ষিত।</span>
+      <span>|||| | ||||| || |||||| ||| ||| • পৃষ্ঠা ${pageNo} এর সমাপ্তি</span>
+    </div>
+  </div>
+</body>
+</html>`
+
+    showToastMessage(`পৃষ্ঠা ${pageNo} প্রিন্ট / PDF সংরক্ষণ ডায়ালগ খোলা হয়েছে`)
+    printHtmlInHiddenIframe(html)
+    return
+  }
+
+  // Image (JPG) high-resolution canvas download
+  const filename = `dainik-bangla-epaper-page-${pageNo}-${selectedDate.value}.jpg`
+  downloadBroadsheetCanvasImage(page, filename)
+  showToastMessage(`পৃষ্ঠা ${pageNo} (JPG ইমেজ) ডাউনলোড সম্পন্ন হয়েছে`)
 }
 
 // Cleanup on unmount
@@ -2026,5 +2665,57 @@ useHead({
 .toast-fade-leave-to {
   opacity: 0;
   transform: translate(-50%, 10px);
+}
+
+@media print {
+  :global(header),
+  :global(footer),
+  :global(nav),
+  .no-print {
+    display: none !important;
+  }
+
+  /* If article modal is open during direct Ctrl+P, hide background workspace and print only static modal */
+  .epaper-modal-open .epaper-workspace-print {
+    display: none !important;
+  }
+
+  .epaper-print-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .epaper-print-modal-card {
+    position: static !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: 1px solid #292524 !important;
+    border-radius: 0 !important;
+  }
+
+  .epaper-print-modal-body {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .epaper-workspace-print,
+  .epaper-broadsheet-outer,
+  .epaper-broadsheet-sheet {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: #fcfbf7 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
 }
 </style>
