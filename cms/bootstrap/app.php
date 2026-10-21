@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'external-news-post',
             'get-categories',
             'subeditor/*',
+            'api/*',
         ]);
 
         $middleware->alias([

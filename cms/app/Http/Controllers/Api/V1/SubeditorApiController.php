@@ -36,8 +36,30 @@ class SubeditorApiController extends Controller
             app()->instance('current.portal', $portal);
         }
 
+        Log::info('Subeditor incoming news attempt', [
+            'title' => $request->input('title') ?: $request->input('post_title'),
+            'ip'    => $request->ip(),
+        ]);
+
         // 1. Validate Secret Token
         if (!$this->validateToken($request, $portalId)) {
+            Log::warning('Subeditor unauthorized request attempt', [
+                'ip'          => $request->ip(),
+                'auth_header' => $request->header('Authorization') ? 'present' : 'missing',
+                'query_token' => $request->query('token') ? 'present' : 'missing',
+            ]);
+
+            SubeditorLog::create([
+                'portal_id'     => $portalId,
+                'post_id'       => null,
+                'title'         => (string) ($request->input('title') ?: $request->input('post_title', 'Unknown Title')),
+                'category_name' => (string) ($request->input('category') ?: (is_array($request->input('categories')) ? implode(',', $request->input('categories')) : $request->input('categories', ''))),
+                'status'        => 'failed',
+                'url'           => null,
+                'error_message' => 'Unauthorized: Invalid or missing API secret token.',
+                'ip_address'    => $request->ip(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -52,7 +74,26 @@ class SubeditorApiController extends Controller
             $request->merge(['content' => $request->input('post_content')]);
         }
         if (!$request->has('category') && $request->has('categories')) {
-            $request->merge(['category' => is_array($request->input('categories')) ? implode(',', $request->input('categories')) : $request->input('categories')]);
+            $catVal = $request->input('categories');
+            $request->merge(['category' => is_array($catVal) ? implode(',', $catVal) : $catVal]);
+        }
+        if (is_array($request->input('category'))) {
+            $firstCat = reset($request->input('category'));
+            $request->merge(['category' => is_string($firstCat) ? $firstCat : '']);
+        }
+        if (!$request->has('image')) {
+            if ($request->has('featured_image')) {
+                $request->merge(['image' => $request->input('featured_image')]);
+            } elseif ($request->has('image_url')) {
+                $request->merge(['image' => $request->input('image_url')]);
+            }
+        }
+        if (!$request->has('tags')) {
+            if ($request->has('keywords')) {
+                $request->merge(['tags' => $request->input('keywords')]);
+            } elseif ($request->has('tag')) {
+                $request->merge(['tags' => $request->input('tag')]);
+            }
         }
 
         // 2. Validate fields
@@ -61,8 +102,8 @@ class SubeditorApiController extends Controller
             'content'     => 'required|string',
             'image'       => 'nullable',
             'category_id' => 'nullable',
-            'category'    => 'nullable|string',
-            'tags'        => 'nullable|string',
+            'category'    => 'nullable',
+            'tags'        => 'nullable',
             'slug'        => 'nullable|string',
         ]);
 
@@ -180,15 +221,19 @@ class SubeditorApiController extends Controller
             $authorId = PortalSetting::where('portal_id', $portalId)
                 ->where('key', 'subeditor_default_author_id')
                 ->value('value')
-                ?? PortalSetting::where('key', 'subeditor_default_author_id')->value('value')
-                ?? User::first()?->id
-                ?? 1;
+                ?: PortalSetting::where('key', 'subeditor_default_author_id')->value('value');
+
+            $author = $authorId ? User::find($authorId) : null;
+            if (!$author) {
+                $author = User::first();
+            }
+            $authorId = $author?->id ?? 1;
 
             // 6. Status resolution
             $autoPublishSetting = PortalSetting::where('portal_id', $portalId)
                 ->where('key', 'subeditor_auto_publish')
                 ->value('value')
-                ?? PortalSetting::where('key', 'subeditor_auto_publish')->value('value');
+                ?: PortalSetting::where('key', 'subeditor_auto_publish')->value('value');
 
             $isAutoPublish = ($autoPublishSetting === null || in_array($autoPublishSetting, ['1', 1, true, 'true', 'yes'], true));
 
@@ -237,9 +282,17 @@ class SubeditorApiController extends Controller
 
             // 8. Handle tags
             if ($request->filled('tags')) {
-                $rawTags = is_array($request->input('tags'))
-                    ? $request->input('tags')
-                    : explode(',', (string) $request->input('tags'));
+                $rawTags = $request->input('tags');
+                if (is_string($rawTags)) {
+                    $decoded = json_decode($rawTags, true);
+                    if (is_array($decoded)) {
+                        $rawTags = $decoded;
+                    } else {
+                        $rawTags = explode(',', $rawTags);
+                    }
+                } elseif (!is_array($rawTags)) {
+                    $rawTags = [(string) $rawTags];
+                }
 
                 $tagIds = [];
                 foreach ($rawTags as $tagName) {
@@ -316,8 +369,16 @@ class SubeditorApiController extends Controller
     public function categories(Request $request): JsonResponse
     {
         $portalId = (int) ($request->header('X-Portal-Id') ?: $request->input('portal_id', 1));
+        $portal = Portal::withoutGlobalScopes()->find($portalId) ?? Portal::first();
+        if ($portal) {
+            $portalId = $portal->id;
+            app()->instance('current.portal', $portal);
+        }
 
         if (!$this->validateToken($request, $portalId)) {
+            Log::warning('Subeditor get-categories unauthorized attempt', [
+                'ip' => $request->ip(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -339,26 +400,50 @@ class SubeditorApiController extends Controller
      */
     protected function validateToken(Request $request, int $portalId = 1): bool
     {
-        $token = $request->bearerToken()
-            ?? $request->header('X-API-KEY')
-            ?? $request->input('token')
-            ?? $request->input('api_key')
-            ?? $request->input('secret');
+        $token = $request->bearerToken();
+        if (empty($token)) {
+            $authHeader = $request->header('Authorization')
+                ?: $request->server('HTTP_AUTHORIZATION')
+                ?: $request->server('REDIRECT_HTTP_AUTHORIZATION')
+                ?: (function_exists('apache_request_headers') ? (apache_request_headers()['Authorization'] ?? null) : null);
+
+            if ($authHeader && preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+                $token = trim($matches[1]);
+            } elseif ($authHeader) {
+                $token = trim($authHeader);
+            }
+        }
+
+        if (empty($token)) {
+            $token = $request->header('X-API-KEY')
+                ?: $request->header('X-Subeditor-Token')
+                ?: $request->input('token')
+                ?: $request->input('api_key')
+                ?: $request->input('secret')
+                ?: $request->query('token')
+                ?: $request->query('api_key')
+                ?: $request->query('secret');
+        }
 
         if (empty($token)) {
             return false;
         }
 
+        $token = trim((string) $token);
+
+        // Retrieve expected token
         $expectedSecret = PortalSetting::where('portal_id', $portalId)
             ->where('key', 'subeditor_api_secret')
             ->value('value')
-            ?? PortalSetting::where('key', 'subeditor_api_secret')->value('value')
-            ?? env('SUBEDITOR_API_SECRET');
+            ?: PortalSetting::where('key', 'subeditor_api_secret')->value('value')
+            ?: env('SUBEDITOR_API_SECRET');
 
         if (empty($expectedSecret)) {
             return false;
         }
 
-        return hash_equals((string) $expectedSecret, (string) $token);
+        $expectedSecret = trim((string) $expectedSecret);
+
+        return hash_equals($expectedSecret, $token);
     }
 }

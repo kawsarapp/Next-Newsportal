@@ -271,11 +271,17 @@ Route::prefix('dashboard')
         });
     });
 
-// ── Subeditor24 Root Aliases ──────────────────────────────────────────────
-Route::post('/external-news-post', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'news']);
-Route::get('/get-categories', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'categories']);
-Route::post('/subeditor/news', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'news']);
-Route::get('/subeditor/categories', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'categories']);
+// ── Subeditor24 Root & API Aliases ────────────────────────────────────────
+Route::controller(\App\Http\Controllers\Api\V1\SubeditorApiController::class)->group(function () {
+    Route::post('/external-news-post', 'news');
+    Route::get('/get-categories', 'categories');
+    Route::post('/api/external-news-post', 'news');
+    Route::get('/api/get-categories', 'categories');
+    Route::post('/api/v1/subeditor/news', 'news');
+    Route::get('/api/v1/subeditor/categories', 'categories');
+    Route::post('/subeditor/news', 'news');
+    Route::get('/subeditor/categories', 'categories');
+});
 
 // ── Catch-all — send to Inertia (SPA) ────────────────────────────────────────
 Route::get('/{any}', function () {

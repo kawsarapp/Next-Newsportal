@@ -33,7 +33,22 @@ export default defineNuxtConfig({
     ],
     server: {
       proxy: {
-        '/api/v1': {
+        '/api': {
+          target: 'http://newsportal-cms.ddev.site',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/external-news-post': {
+          target: 'http://newsportal-cms.ddev.site',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/get-categories': {
+          target: 'http://newsportal-cms.ddev.site',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/subeditor': {
           target: 'http://newsportal-cms.ddev.site',
           changeOrigin: true,
           secure: false,
@@ -44,8 +59,17 @@ export default defineNuxtConfig({
 
   nitro: {
     routeRules: {
-      '/api/v1/**': {
-        proxy: 'http://newsportal-cms.ddev.site/api/v1/**',
+      '/api/**': {
+        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/api/**`,
+      },
+      '/external-news-post': {
+        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/external-news-post`,
+      },
+      '/get-categories': {
+        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/get-categories`,
+      },
+      '/subeditor/**': {
+        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/subeditor/**`,
       },
     },
   },
