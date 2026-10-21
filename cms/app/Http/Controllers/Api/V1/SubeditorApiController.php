@@ -178,7 +178,9 @@ class SubeditorApiController extends Controller
             // 4. Category resolution
             $category = null;
             if ($request->filled('category_id')) {
-                $category = Category::withoutGlobalScopes()
+                $category = Category::withoutGlobalScope(\App\Models\Scopes\PortalScope::class)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
                     ->where('portal_id', $portalId)
                     ->where('id', $request->input('category_id'))
                     ->first();
@@ -201,7 +203,9 @@ class SubeditorApiController extends Controller
                     }
                 }
 
-                $category = Category::withoutGlobalScopes()
+                $category = Category::withoutGlobalScope(\App\Models\Scopes\PortalScope::class)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
                     ->where('portal_id', $portalId)
                     ->where(function ($q) use ($searchNames, $catInput) {
                         $q->whereIn('name', $searchNames)
@@ -219,11 +223,14 @@ class SubeditorApiController extends Controller
                     ?? PortalSetting::where('key', 'subeditor_default_category_id')->value('value')
                     ?? 1;
 
-                $category = Category::withoutGlobalScopes()
+                $category = Category::withoutGlobalScope(\App\Models\Scopes\PortalScope::class)
+                    ->whereNull('deleted_at')
+                    ->where('is_active', true)
                     ->where('portal_id', $portalId)
                     ->where('id', $defaultCatId)
                     ->first()
-                    ?? Category::withoutGlobalScopes()
+                    ?? Category::withoutGlobalScope(\App\Models\Scopes\PortalScope::class)
+                        ->whereNull('deleted_at')
                         ->where('portal_id', $portalId)
                         ->where('is_active', true)
                         ->first();
@@ -400,7 +407,8 @@ class SubeditorApiController extends Controller
             ], 401);
         }
 
-        $categories = Category::withoutGlobalScopes()
+        $categories = Category::withoutGlobalScope(\App\Models\Scopes\PortalScope::class)
+            ->whereNull('deleted_at')
             ->where('is_active', true)
             ->where('portal_id', $portalId)
             ->with('parent:id,name')

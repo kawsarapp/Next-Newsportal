@@ -167,7 +167,11 @@ class CategoryController extends Controller
 
             $category = Category::create($validated);
 
-            if ($request->wantsJson() || $request->ajax()) {
+            if ($request->header('X-Inertia')) {
+                return back()->with('success', 'ক্যাটাগরি সফলভাবে তৈরি হয়েছে!');
+            }
+
+            if ($request->expectsJson() && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => true,
                     'category' => $category,
@@ -183,7 +187,11 @@ class CategoryController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            if ($request->wantsJson() || $request->ajax()) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors(['error' => 'ক্যাটাগরি তৈরিতে ত্রুটি হয়েছে: ' . $e->getMessage()])->withInput();
+            }
+
+            if ($request->expectsJson() && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ক্যাটাগরি তৈরিতে ত্রুটি হয়েছে: ' . $e->getMessage(),
@@ -248,7 +256,11 @@ class CategoryController extends Controller
 
             $category->update($validated);
 
-            if ($request->wantsJson() || $request->ajax()) {
+            if ($request->header('X-Inertia')) {
+                return back()->with('success', 'ক্যাটাগরি আপডেট করা হয়েছে!');
+            }
+
+            if ($request->expectsJson() && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => true,
                     'category' => $category,
@@ -264,7 +276,11 @@ class CategoryController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            if ($request->wantsJson() || $request->ajax()) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors(['error' => 'ক্যাটাগরি আপডেটে ত্রুটি হয়েছে: ' . $e->getMessage()])->withInput();
+            }
+
+            if ($request->expectsJson() && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ক্যাটাগরি আপডেটে ত্রুটি হয়েছে: ' . $e->getMessage(),
@@ -277,6 +293,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
+        $category->update(['is_active' => false]);
         $category->delete();
         return back()->with('success', 'ক্যাটাগরি মুছে ফেলা হয়েছে!');
     }
