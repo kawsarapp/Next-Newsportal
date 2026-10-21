@@ -60,11 +60,17 @@
 
             <!-- User Menu -->
             <div class="relative" ref="userMenuRef">
-              <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 text-sm">
-                <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+              <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-2 text-sm focus:outline-none">
+                <img
+                  v-if="$page.props.auth?.user?.avatar"
+                  :src="$page.props.auth.user.avatar"
+                  alt="Avatar"
+                  class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                />
+                <div v-else class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
                   {{ userInitials }}
                 </div>
-                <span class="hidden md:block text-gray-700">{{ $page.props.auth?.user?.name ?? 'ইউজার' }}</span>
+                <span class="hidden md:block text-gray-700 font-medium">{{ $page.props.auth?.user?.name ?? 'ইউজার' }}</span>
                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>

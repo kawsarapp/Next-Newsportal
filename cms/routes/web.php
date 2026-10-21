@@ -253,7 +253,7 @@ Route::prefix('dashboard')
         // Profile
         Route::prefix('profile')->name('profile.')->group(function () {
             Route::get('/',     [Dashboard\ProfileController::class, 'index'])->name('index');
-            Route::put('/',     [Dashboard\ProfileController::class, 'update'])->name('update');
+            Route::match(['put', 'post'], '/', [Dashboard\ProfileController::class, 'update'])->name('update');
             Route::put('/password', [Dashboard\ProfileController::class, 'updatePassword'])->name('password');
             Route::post('/2fa/enable',  [Dashboard\ProfileController::class, 'enable2fa'])->name('2fa.enable');
             Route::post('/2fa/disable', [Dashboard\ProfileController::class, 'disable2fa'])->name('2fa.disable');

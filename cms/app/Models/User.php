@@ -18,9 +18,9 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $fillable = [
-        'portal_id', 'name', 'username', 'email', 'password', 'phone', 'avatar',
+        'portal_id', 'name', 'username', 'email', 'password', 'phone', 'bio', 'avatar',
         'reporter_type', 'district_id', 'institution',
-        'status', 'login_attempts', 'locked_until', 'last_login_at', 'last_login_ip',
+        'two_factor_enabled', 'status', 'login_attempts', 'locked_until', 'last_login_at', 'last_login_ip',
     ];
 
     protected $hidden = [
@@ -31,10 +31,21 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at'         => 'datetime',
         'two_factor_confirmed_at'   => 'datetime',
+        'two_factor_enabled'        => 'boolean',
         'locked_until'              => 'datetime',
         'last_login_at'             => 'datetime',
         'password'                  => 'hashed',
     ];
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar;
+    }
+
+    public function setAvatarUrlAttribute(?string $value): void
+    {
+        $this->attributes['avatar'] = $value;
+    }
 
     // ─── Relationships ────────────────────────────────────────────────────────
 
