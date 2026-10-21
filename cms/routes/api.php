@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\DesignTokenController;
 use App\Http\Controllers\Api\V1\PageController;
+use App\Http\Controllers\Api\V1\AreaController;
+use App\Http\Controllers\Api\V1\SubeditorApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -51,6 +53,10 @@ Route::prefix('v1')
             Route::get('/{slug}/posts', 'posts');
         });
 
+        // ── Areas / Divisions ──────────────────────────────────────────────────
+        Route::get('areas', [AreaController::class, 'index']);
+        Route::get('divisions', [AreaController::class, 'index']);
+
         // ── Menus ─────────────────────────────────────────────────────────────
         Route::get('menus/{location}', [MenuController::class, 'show']); // GET /api/v1/menus/header
 
@@ -73,3 +79,17 @@ Route::prefix('v1')
         Route::get('search', [SearchController::class, 'index'])
              ->middleware('throttle:search');
     });
+
+// ── Subeditor24 Integration Endpoints ─────────────────────────────────────
+Route::prefix('v1/subeditor')->controller(SubeditorApiController::class)->group(function () {
+    Route::post('news', 'news');
+    Route::get('categories', 'categories');
+});
+
+// Root aliases for Subeditor24 standard defaults
+Route::controller(SubeditorApiController::class)->group(function () {
+    Route::post('external-news-post', 'news');
+    Route::get('get-categories', 'categories');
+    Route::post('subeditor/news', 'news');
+    Route::get('subeditor/categories', 'categories');
+});

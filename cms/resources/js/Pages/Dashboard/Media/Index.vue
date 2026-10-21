@@ -8,7 +8,7 @@
         </div>
         <label class="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-sm inline-flex items-center gap-2 cursor-pointer">
           <span>📤</span> নতুন ছবি আপলোড
-          <input type="file" @change="uploadMedia" accept="image/*" class="hidden" />
+          <input type="file" @change="uploadMedia" accept="image/*" multiple class="hidden" />
         </label>
       </div>
 
@@ -86,20 +86,33 @@ const filteredMedia = computed(() => {
   return props.media.filter(m => m.name.toLowerCase().includes(search.value.toLowerCase()))
 })
 
-const uploadMedia = (e) => {
-  const file = e.target.files[0]
-  if (!file) return
+const uploadMedia = async (e) => {
+  const fileList = Array.from(e.target.files || [])
+  if (fileList.length === 0) return
 
   uploading.value = true
   const formData = new FormData()
-  formData.append('file', file)
+  if (fileList.length === 1) {
+    formData.append('file', fileList[0])
+  } else {
+    fileList.forEach(file => formData.append('files[]', file))
+  }
 
-  router.post(route('dashboard.media.upload'), formData, {
-    forceFormData: true,
-    onFinish: () => {
-      uploading.value = false
-    }
-  })
+  try {
+    await window.axios.post(route('dashboard.media.upload'), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+      },
+    })
+    router.reload({ preserveScroll: true })
+  } catch (err) {
+    console.error('Media upload failed:', err)
+    alert('ছবি আপলোড করতে ব্যর্থ হয়েছে।')
+  } finally {
+    uploading.value = false
+    e.target.value = ''
+  }
 }
 
 const copyUrl = (url) => {

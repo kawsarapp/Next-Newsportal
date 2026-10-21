@@ -9,8 +9,8 @@ export default defineNuxtConfig({
   ssr: false,
 
   app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
-    layoutTransition: { name: 'layout', mode: 'out-in' },
+    pageTransition: false,
+    layoutTransition: false,
     head: {
       title: 'দৈনিক বাংলা — সর্বশেষ নির্ভরযোগ্য সংবাদ',
       meta: [
@@ -31,6 +31,15 @@ export default defineNuxtConfig({
     plugins: [
       tailwindcss(),
     ],
+    server: {
+      proxy: {
+        '/api/v1': {
+          target: 'http://newsportal-cms.ddev.site',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
   },
 
   nitro: {
@@ -43,7 +52,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: '/api/v1',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://newsportal-cms.ddev.site/api/v1',
       portalKey: process.env.NUXT_PUBLIC_PORTAL_KEY || 'pk_live_3hGHMgZc4RhMJ22FHTuqCBpU6fCOgQJd6tjv5agt',
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'দৈনিক বাংলা',
     },

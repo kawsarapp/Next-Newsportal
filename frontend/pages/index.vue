@@ -17,8 +17,29 @@
       </div>
     </div>
 
-    <!-- Loading Skeleton -->
-    <div v-if="pending" class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
+    <!-- Floating subtle refresh indicator when logo is clicked -->
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-2 scale-95"
+      enter-to-class="opacity-100 translate-y-0 scale-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100 translate-y-0 scale-100"
+      leave-to-class="opacity-0 -translate-y-2 scale-95"
+    >
+      <div
+        v-if="isRefreshingNews"
+        class="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-xl flex items-center gap-2 pointer-events-none"
+      >
+        <svg class="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span>সর্বশেষ সংবাদ আপডেট হচ্ছে...</span>
+      </div>
+    </Transition>
+
+    <!-- Loading Skeleton (Initial load only) -->
+    <div v-if="pending && (!posts || posts.length === 0)" class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
       <div class="lg:col-span-2 h-96 bg-gray-200 rounded-2xl"></div>
       <div class="space-y-4">
         <div class="h-28 bg-gray-200 rounded-xl"></div>
@@ -259,25 +280,46 @@
   </template>
 
 <script setup>
-const config = useRuntimeConfig()
+import { onMounted, onUnmounted, watch } from 'vue'
 
-// 1. Fetch live posts
-// 1. Fetch live posts & featured posts
-const { data: postsResponse, pending, error } = await useFetch(`${config.public.apiBase}/posts?per_page=50`, {
+definePageMeta({
+  key: route => route.fullPath,
+})
+
+const config = useRuntimeConfig()
+const refreshTrigger = useState('home-refresh-trigger', () => 0)
+const isRefreshingNews = useState('is-refreshing-news', () => false)
+
+// Watch logo click trigger to reload news repeatedly without full screen reload
+watch(refreshTrigger, async (newVal, oldVal) => {
+  if (newVal > oldVal) {
+    await Promise.allSettled([
+      refreshPosts(),
+      refreshFeatured(),
+    ])
+  }
+})
+
+// 1. Fetch live posts & featured posts (Instant fresh fetch without stale SWR/cache)
+const { data: postsResponse, pending, error, refresh: refreshPosts } = useFetch(`${config.public.apiBase}/posts?per_page=50`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-posts-lead',
+  lazy: true,
+  getCachedData: () => undefined,
 })
 
-const { data: featuredResponse } = await useFetch(`${config.public.apiBase}/posts/featured?limit=10`, {
+const { data: featuredResponse, refresh: refreshFeatured } = useFetch(`${config.public.apiBase}/posts/featured?limit=10`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-posts-featured',
+  lazy: true,
   default: () => ({ data: [] }),
+  getCachedData: () => undefined,
 })
 
 const posts = computed(() => postsResponse.value?.data || [])
@@ -295,12 +337,13 @@ const secondaryPosts = computed(() => {
 })
 
 // 2. Fetch Dynamic Homepage Sections from CMS Builder
-const { data: sectionsResponse } = await useFetch(`${config.public.apiBase}/homepage-sections`, {
+const { data: sectionsResponse } = useFetch(`${config.public.apiBase}/homepage-sections`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-dynamic-sections',
+  lazy: true,
   default: () => ({ success: true, data: [] }),
 })
 
@@ -322,20 +365,26 @@ const activeSections = computed(() => {
 // Helper to filter posts by section category
 function getSectionPosts(section) {
   if (section.category_id || section.category?.id) {
-    const targetCatId = section.category_id || section.category?.id
-    const filtered = posts.value.filter(p => p.category?.id === targetCatId)
-    return filtered.length > 0 ? filtered : posts.value
+    const targetCatId = Number(section.category_id || section.category?.id)
+    const filtered = posts.value.filter(p => {
+      if (Number(p.category?.id) === targetCatId) return true
+      if (p.secondary_categories?.some(sc => Number(sc.id) === targetCatId)) return true
+      if (Array.isArray(p.additional_category_ids) && p.additional_category_ids.map(Number).includes(targetCatId)) return true
+      return false
+    })
+    return filtered
   }
   return posts.value
 }
 
 // 3. Sports Score Bar
-const { data: sportsResponse } = await useFetch(`${config.public.apiBase}/m/CricketScoreboard`, {
+const { data: sportsResponse } = useFetch(`${config.public.apiBase}/m/CricketScoreboard`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-sports-score',
+  lazy: true,
   default: () => null,
 })
 
@@ -350,12 +399,13 @@ const formatDate = (dateStr) => {
 }
 
 // 4. YouTube Live & Videos config from CMS
-const { data: ytResponse } = await useFetch(`${config.public.apiBase}/youtube-config`, {
+const { data: ytResponse } = useFetch(`${config.public.apiBase}/youtube-config`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-youtube-config',
+  lazy: true,
   default: () => ({ success: true, data: {} }),
 })
 
@@ -403,5 +453,24 @@ const shouldRenderYoutubeAtBottom = computed(() => {
   if (pos === 'bottom') return true
   if (activeSections.value.length === 0) return true
   return false
+})
+
+onMounted(() => {
+  // Fresh refresh when navigating to home
+  refreshPosts()
+  refreshFeatured()
+
+  if (process.client) {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshPosts()
+        refreshFeatured()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    onUnmounted(() => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+    })
+  }
 })
 </script>

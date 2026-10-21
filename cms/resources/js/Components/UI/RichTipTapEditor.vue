@@ -104,7 +104,7 @@
 
       <button
         type="button"
-        @click="setLink"
+        @click="openLinkModal"
         :class="['toolbar-btn', { 'is-active': editor.isActive('link') }]"
         title="Add Link"
       >
@@ -175,6 +175,18 @@
       >
         ↪
       </button>
+
+      <!-- Delete Selected Media Button (Appears when any Image or Iframe is selected) -->
+      <button
+        v-if="isMediaSelected"
+        type="button"
+        @click="deleteSelectedMedia"
+        class="toolbar-btn text-xs font-semibold text-white bg-red-600 hover:bg-red-700 flex items-center gap-1.5 px-3 h-[1.85rem] rounded-md transition-colors shadow-sm ml-auto animate-pulse"
+        :title="`নির্বাচিত ${selectedMediaLabel} মুছে ফেলুন (Backspace / Delete)`"
+      >
+        <span>🗑️</span>
+        <span>{{ selectedMediaLabel }} মুছে ফেলুন</span>
+      </button>
     </div>
 
     <!-- Editor Surface -->
@@ -207,6 +219,17 @@
       @close="showEmbedModal = false"
       @insert="handleEmbedInsert"
     />
+
+    <!-- Link Insertion Modal -->
+    <LinkModal
+      :show="showLinkModal"
+      :selected-text="linkModalSelectedText"
+      :initial-url="linkModalInitialUrl"
+      :is-linked="isCurrentLinkActive"
+      @close="showLinkModal = false"
+      @insert="handleLinkInsert"
+      @unlink="handleUnlink"
+    />
   </div>
 </template>
 
@@ -222,6 +245,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import MediaPickerModal from '@/Components/UI/MediaPickerModal.vue'
 import MediaEmbedModal from '@/Components/UI/MediaEmbedModal.vue'
+import LinkModal from '@/Components/UI/LinkModal.vue'
 import Iframe from '@/Components/UI/TiptapExtensions/Iframe.js'
 
 const props = defineProps({
@@ -238,6 +262,118 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const showEmbedModal = ref(false)
+const showLinkModal = ref(false)
+const linkModalSelectedText = ref('')
+const linkModalInitialUrl = ref('')
+const isCurrentLinkActive = ref(false)
+const isMediaSelected = ref(false)
+const selectedMediaLabel = ref('')
+
+const CustomImage = Image.extend({
+  selectable: true,
+  draggable: true,
+  addNodeView() {
+    return ({ node, HTMLAttributes, getPos, editor }) => {
+      const dom = document.createElement('div')
+      dom.className = 'relative my-4 inline-block max-w-full group tiptap-image-container select-none'
+      dom.setAttribute('data-tiptap-image', 'true')
+
+      const img = document.createElement('img')
+      const mergedAttrs = { ...this.options.HTMLAttributes, ...HTMLAttributes }
+      Object.entries(mergedAttrs).forEach(([key, val]) => {
+        if (val !== null && val !== undefined) {
+          img.setAttribute(key, val)
+        }
+      })
+      img.className = (mergedAttrs.class || '') + ' block cursor-pointer transition-all'
+
+      // Floating control bar / delete button
+      const controlBar = document.createElement('div')
+      controlBar.className = 'absolute top-3 right-3 z-20 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity'
+
+      const deleteBtn = document.createElement('button')
+      deleteBtn.type = 'button'
+      deleteBtn.className = 'flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-md transition-colors cursor-pointer'
+      deleteBtn.innerHTML = '<span>🗑️</span><span>মুছে ফেলুন</span>'
+      deleteBtn.title = 'ছবিটি মুছে ফেলুন (Delete)'
+
+      const handleDelete = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (typeof getPos === 'function') {
+          const pos = getPos()
+          editor.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run()
+        }
+      }
+
+      deleteBtn.addEventListener('click', handleDelete)
+      deleteBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      })
+
+      img.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (typeof getPos === 'function') {
+          const pos = getPos()
+          editor.commands.setNodeSelection(pos)
+        }
+      })
+
+      controlBar.appendChild(deleteBtn)
+      dom.appendChild(img)
+      dom.appendChild(controlBar)
+
+      return {
+        dom,
+        selectNode: () => {
+          dom.classList.add('ProseMirror-selectednode')
+          img.classList.add('ring-4', 'ring-red-500', 'border-red-500')
+          controlBar.classList.remove('opacity-0')
+          controlBar.classList.add('opacity-100')
+        },
+        deselectNode: () => {
+          dom.classList.remove('ProseMirror-selectednode')
+          img.classList.remove('ring-4', 'ring-red-500', 'border-red-500')
+        },
+        stopEvent: (event) => {
+          return controlBar.contains(event.target)
+        },
+        ignoreMutation: () => true,
+        destroy: () => {
+          deleteBtn.removeEventListener('click', handleDelete)
+        },
+      }
+    }
+  },
+})
+
+const updateMediaSelection = (ed) => {
+  if (!ed) {
+    isMediaSelected.value = false
+    selectedMediaLabel.value = ''
+    return
+  }
+  const { selection } = ed.state
+  if (selection && selection.node) {
+    const nodeName = selection.node.type.name
+    if (nodeName === 'image' || nodeName === 'iframe') {
+      isMediaSelected.value = true
+      selectedMediaLabel.value = nodeName === 'iframe' ? 'ভিডিও' : 'ছবি'
+      return
+    }
+  }
+  isMediaSelected.value = false
+  selectedMediaLabel.value = ''
+}
+
+const deleteSelectedMedia = () => {
+  if (editor.value) {
+    editor.value.chain().focus().deleteSelection().run()
+    isMediaSelected.value = false
+  }
+}
 
 const editor = useEditor({
   content: props.modelValue,
@@ -246,12 +382,14 @@ const editor = useEditor({
     Underline,
     Iframe,
     Link.configure({
+      autolink: true,
+      linkOnPaste: true,
       openOnClick: false,
       HTMLAttributes: {
-        class: 'text-red-600 underline font-medium',
+        class: 'text-red-600 underline font-semibold',
       }
     }),
-    Image.configure({
+    CustomImage.configure({
       HTMLAttributes: {
         class: 'rounded-xl max-w-full my-4 border border-gray-100 shadow-sm',
       }
@@ -264,8 +402,12 @@ const editor = useEditor({
     }),
     CharacterCount,
   ],
+  onSelectionUpdate: ({ editor }) => {
+    updateMediaSelection(editor)
+  },
   onUpdate: ({ editor }) => {
     emit('update:modelValue', editor.getHTML())
+    updateMediaSelection(editor)
   }
 })
 
@@ -278,16 +420,49 @@ watch(() => props.modelValue, (val) => {
 const wordCount = computed(() => editor.value?.storage.characterCount.words() ?? 0)
 const characterCount = computed(() => editor.value?.storage.characterCount.characters() ?? 0)
 
-const setLink = () => {
-  const previousUrl = editor.value.getAttributes('link').href
-  const url = window.prompt('URL প্রবেশ করান:', previousUrl)
+const openLinkModal = () => {
+  if (!editor.value) return
+  const { from, to } = editor.value.state.selection
+  const text = editor.value.state.doc.textBetween(from, to, ' ')
+  linkModalSelectedText.value = text.trim()
+  linkModalInitialUrl.value = editor.value.getAttributes('link').href || ''
+  isCurrentLinkActive.value = editor.value.isActive('link')
+  showLinkModal.value = true
+}
 
-  if (url === null) return
-  if (url === '') {
-    editor.value.chain().focus().extendMarkRange('link').unsetLink().run()
-    return
+const handleLinkInsert = ({ url, text, target }) => {
+  if (!editor.value) return
+
+  const { from, to } = editor.value.state.selection
+  const hasSelection = from !== to
+
+  const attrs = {
+    href: url,
+    target: target || null,
+    class: 'text-red-600 underline font-semibold',
   }
-  editor.value.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+
+  if (hasSelection) {
+    editor.value
+      .chain()
+      .focus()
+      .extendMarkRange('link')
+      .setLink(attrs)
+      .run()
+  } else {
+    const targetAttr = target ? ` target="${target}" rel="noopener noreferrer"` : ''
+    const linkHtml = `<a href="${url}" class="text-red-600 underline font-semibold"${targetAttr}>${text || url}</a> `
+    editor.value
+      .chain()
+      .focus()
+      .insertContent(linkHtml)
+      .run()
+  }
+}
+
+const handleUnlink = () => {
+  if (!editor.value) return
+  editor.value.chain().focus().extendMarkRange('link').unsetLink().run()
 }
 
 const addImageUrl = () => {
@@ -316,17 +491,20 @@ const uploadInlineImage = async (e) => {
 
   try {
     const res = await window.axios.post(route('dashboard.media.upload'), formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+      },
     })
 
     if (res.data?.files && Array.isArray(res.data.files)) {
       res.data.files.forEach(item => {
         if (item.url) {
-          editor.value.chain().focus().setImage({ src: item.url }).run()
+          editor.value.chain().focus().setImage({ src: item.url }).createParagraphNear().run()
         }
       })
     } else if (res.data?.url) {
-      editor.value.chain().focus().setImage({ src: res.data.url }).run()
+      editor.value.chain().focus().setImage({ src: res.data.url }).createParagraphNear().run()
     }
   } catch (err) {
     console.error('Image upload failed:', err)
@@ -344,7 +522,7 @@ const handleMediaPickerSelect = (selected) => {
   const items = Array.isArray(selected) ? selected : [selected]
   items.forEach(item => {
     if (item.url) {
-      editor.value?.chain().focus().setImage({ src: item.url }).run()
+      editor.value?.chain().focus().setImage({ src: item.url }).createParagraphNear().run()
     }
   })
 }
@@ -406,7 +584,113 @@ onBeforeUnmount(() => {
   background-color: #f3f4f6;
   max-width: 100%;
 }
-:deep(.tiptap iframe.ProseMirror-selectednode) {
-  outline: 3px solid #ef4444;
+/* 1. Landscape Videos (16:9) */
+:deep(.tiptap iframe.facebook-video-landscape),
+:deep(.tiptap iframe[data-embed-type="facebook-video"]),
+:deep(.tiptap iframe[data-orientation="landscape"]),
+:deep(.tiptap iframe[data-embed-type="youtube"]),
+:deep(.tiptap iframe[src*="facebook.com/plugins/video"]:not([data-orientation="vertical"]):not([data-orientation="square"]):not(.facebook-video-vertical):not(.facebook-video-square)),
+:deep(.tiptap iframe[src*="plugins/video.php"]:not([data-orientation="vertical"]):not([data-orientation="square"]):not(.facebook-video-vertical):not(.facebook-video-square)),
+:deep(.tiptap iframe.facebook-video:not(.facebook-video-vertical):not(.facebook-video-square):not([data-orientation="vertical"]):not([data-orientation="square"])) {
+  aspect-ratio: 16 / 9 !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* 2. Facebook Vertical Videos / Reels (9:16) */
+:deep(.tiptap iframe.facebook-video-vertical),
+:deep(.tiptap iframe[data-embed-type="facebook-reel"]),
+:deep(.tiptap iframe[data-orientation="vertical"]) {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+  background-color: #000 !important;
+}
+
+/* 3. Facebook Square Videos (1:1) */
+:deep(.tiptap iframe.facebook-video-square),
+:deep(.tiptap iframe[data-embed-type="facebook-square"]),
+:deep(.tiptap iframe[data-orientation="square"]) {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  max-width: 520px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* 4. YouTube Shorts (Kept untouched and separate) */
+:deep(.tiptap iframe[src*="youtube.com/shorts/"]),
+:deep(.tiptap iframe[data-embed-type="youtube-shorts"]) {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  min-height: 560px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+  :deep(.tiptap iframe.facebook-video-vertical),
+  :deep(.tiptap iframe[data-embed-type="facebook-reel"]),
+  :deep(.tiptap iframe[data-orientation="vertical"]) {
+    max-width: min(100%, 340px) !important;
+    width: 100% !important;
+    aspect-ratio: 9 / 16 !important;
+    height: auto !important;
+  }
+
+  :deep(.tiptap iframe.facebook-video-square),
+  :deep(.tiptap iframe[data-orientation="square"]) {
+    max-width: 100% !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
+  }
+
+  :deep(.tiptap iframe.facebook-video-landscape),
+  :deep(.tiptap iframe[data-orientation="landscape"]) {
+    max-width: 100% !important;
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    height: auto !important;
+  }
+
+  :deep(.tiptap iframe[src*="youtube.com/shorts/"]),
+  :deep(.tiptap iframe[data-embed-type="youtube-shorts"]) {
+    max-width: 340px !important;
+    min-height: 500px !important;
+  }
+}
+:deep(.tiptap .ProseMirror-selectednode),
+:deep(.tiptap img.ProseMirror-selectednode) {
+  outline: 3px solid #ef4444 !important;
+  outline-offset: 3px;
+  border-radius: 0.75rem;
+}
+:deep(.tiptap .tiptap-iframe-container.ProseMirror-selectednode),
+:deep(.tiptap .tiptap-image-container.ProseMirror-selectednode) {
+  outline: 3px solid #ef4444 !important;
+  outline-offset: 3px;
+  border-radius: 0.75rem;
 }
 </style>

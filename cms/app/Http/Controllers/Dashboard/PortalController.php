@@ -10,4 +10,5 @@ class PortalController extends Controller {
   public function edit($id)  { return Inertia::render('Dashboard/ComingSoon', ['title' => 'PortalController']); }
   public function update($id){ return back()->with('success', 'আপডেট হয়েছে।'); }
   public function destroy($id){ return back()->with('success', 'মুছে ফেলা হয়েছে।'); }
+  public function suspend($id){ return back()->with('success', 'পোর্টাল স্থগিত করা হয়েছে।'); }
 }

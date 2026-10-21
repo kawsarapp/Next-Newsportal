@@ -11,6 +11,13 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 */
 
+// ── Root Redirect ─────────────────────────────────────────────────────────────
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard.overview')
+        : redirect()->route('login');
+});
+
 // ── Auth Routes ───────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     Route::get('login',           [Dashboard\Auth\LoginController::class, 'show'])->name('login');
@@ -114,8 +121,27 @@ Route::prefix('dashboard')
         Route::prefix('social')->name('social.')->group(function () {
             Route::get('/',           [Dashboard\SocialController::class, 'index'])->name('index');
             Route::get('/accounts',   [Dashboard\SocialController::class, 'accounts'])->name('accounts');
+            Route::post('/accounts',  [Dashboard\SocialController::class, 'storeAccount'])->name('accounts.store');
+            Route::delete('/accounts/{account}', [Dashboard\SocialController::class, 'destroyAccount'])->name('accounts.destroy');
             Route::get('/queue',      [Dashboard\SocialController::class, 'queue'])->name('queue');
             Route::post('/publish',   [Dashboard\SocialController::class, 'publish'])->name('publish');
+        });
+
+        // M-08-B Social Photocard & Auto-Publisher
+        Route::prefix('social-publisher')->name('social-publisher.')->group(function () {
+            Route::get('/',                   [Dashboard\SocialPublisherController::class, 'index'])->name('index');
+            Route::post('/publish',           [Dashboard\SocialPublisherController::class, 'publish'])->name('publish');
+            Route::post('/re-share/{post}',   [Dashboard\SocialPublisherController::class, 'reShare'])->name('re-share');
+            Route::post('/facebook-settings', [Dashboard\SocialPublisherController::class, 'saveFacebookSettings'])->name('facebook-settings');
+            Route::post('/test-facebook',     [Dashboard\SocialPublisherController::class, 'testFacebookConnection'])->name('test-facebook');
+        });
+
+        // Subeditor24 Integration
+        Route::prefix('subeditor')->name('subeditor.')->group(function () {
+            Route::get('/', [Dashboard\SubeditorIntegrationController::class, 'index'])->name('index');
+            Route::post('/settings', [Dashboard\SubeditorIntegrationController::class, 'updateSettings'])->name('settings.update');
+            Route::post('/generate-token', [Dashboard\SubeditorIntegrationController::class, 'generateToken'])->name('token.generate');
+            Route::delete('/logs', [Dashboard\SubeditorIntegrationController::class, 'clearLogs'])->name('logs.clear');
         });
 
         // M-09 AI Newsroom
@@ -245,7 +271,15 @@ Route::prefix('dashboard')
         });
     });
 
+// ── Subeditor24 Root Aliases ──────────────────────────────────────────────
+Route::post('/external-news-post', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'news']);
+Route::get('/get-categories', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'categories']);
+Route::post('/subeditor/news', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'news']);
+Route::get('/subeditor/categories', [App\Http\Controllers\Api\V1\SubeditorApiController::class, 'categories']);
+
 // ── Catch-all — send to Inertia (SPA) ────────────────────────────────────────
-Route::get('/{any}', fn () => Inertia::render('Dashboard/ComingSoon', ['title' => 'Page Not Found']))
-    ->where('any', '^(?!api|horizon).*$')
-    ->name('fallback');
+Route::get('/{any}', function () {
+    return auth()->check()
+        ? Inertia::render('Dashboard/ComingSoon', ['title' => 'Page Not Found'])
+        : redirect()->route('login');
+})->where('any', '^(?!api|horizon).*$')->name('fallback');

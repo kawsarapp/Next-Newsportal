@@ -228,11 +228,35 @@ const handleUpload = async (e) => {
   }
 
   try {
-    await window.axios.post(route('dashboard.media.upload'), formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    const res = await window.axios.post(route('dashboard.media.upload'), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+      },
     })
     // Refresh media list after upload
     await fetchMedia()
+
+    // Auto-select uploaded files
+    const uploadedUrls = []
+    if (res.data?.files && Array.isArray(res.data.files)) {
+      uploadedUrls.push(...res.data.files.map(f => f.url))
+    } else if (res.data?.url) {
+      uploadedUrls.push(res.data.url)
+    }
+
+    if (uploadedUrls.length > 0) {
+      const newlyAdded = mediaList.value.filter(m => uploadedUrls.includes(m.url))
+      if (props.multiple) {
+        newlyAdded.forEach(item => {
+          if (!selectedItems.value.some(i => i.id === item.id || i.url === item.url)) {
+            selectedItems.value.push(item)
+          }
+        })
+      } else if (newlyAdded.length > 0) {
+        selectedItems.value = [newlyAdded[0]]
+      }
+    }
   } catch (err) {
     console.error('Media upload failed:', err)
     alert('ছবি আপলোড করতে ব্যর্থ হয়েছে। সর্বোচ্চ ফাইল সাইজ ১০MB।')

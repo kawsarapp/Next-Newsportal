@@ -44,7 +44,15 @@
         >
         <select v-model="filters.category_id" class="input-field w-40" @change="reload">
           <option value="">সব ক্যাটাগরি</option>
-          <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+          <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+            {{ cat.depth > 0 ? (cat.depth === 1 ? '— ' : '—— ') : '' }}{{ cat.name }}
+          </option>
+        </select>
+        <select v-model="filters.division_id" class="input-field w-36" @change="reload">
+          <option value="">সকল বিভাগ</option>
+          <option v-for="div in divisions" :key="div.id" :value="div.id">
+            {{ div.name }}
+          </option>
         </select>
         <select v-model="filters.type" class="input-field w-36" @change="reload">
           <option value="">সব ধরন</option>
@@ -119,9 +127,14 @@
                 </div>
               </td>
               <td class="py-3 px-4 hidden md:table-cell">
-                <span class="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-lg">
-                  {{ post.category?.name || post.category || 'অবর্গীকৃত' }}
-                </span>
+                <div class="flex flex-col gap-1 items-start">
+                  <span class="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-lg">
+                    {{ post.category?.name || post.category || 'অবর্গীকৃত' }}
+                  </span>
+                  <span v-if="post.division" class="text-[11px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">
+                    📍 {{ post.district?.name ? `${post.division.name} › ${post.district.name}` : `${post.division.name} বিভাগ` }}
+                  </span>
+                </div>
               </td>
               <td class="py-3 px-4 hidden lg:table-cell">
                 <span class="text-xs text-gray-600">{{ post.author?.name || post.author || 'অনলাইন ডেস্ক' }}</span>
@@ -196,6 +209,7 @@ import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
 const props = defineProps({
   posts:      { type: Object, required: true },
   categories: { type: Array,  default: () => [] },
+  divisions:  { type: Array,  default: () => [] },
   counts:     { type: Object, default: () => ({}) },
   filters:    { type: Object, default: () => ({}) },
 })
@@ -204,6 +218,7 @@ const filters = ref({
   status:      props.filters.status ?? '',
   search:      props.filters.search ?? '',
   category_id: props.filters.category_id ?? '',
+  division_id: props.filters.division_id ?? '',
   type:        props.filters.type ?? '',
   sort:        props.filters.sort ?? 'latest',
 })

@@ -79,6 +79,10 @@
 </template>
 
 <script setup>
+definePageMeta({
+  key: route => route.fullPath,
+})
+
 const route = useRoute()
 const router = useRouter()
 const config = useRuntimeConfig()
@@ -90,12 +94,14 @@ watch(query, (newVal) => {
   searchInput.value = newVal
 })
 
-const { data: searchResponse, pending, error } = await useFetch(() => `${config.public.apiBase}/search?q=${encodeURIComponent(query.value)}`, {
+const { data: searchResponse, pending, error } = useFetch(() => `${config.public.apiBase}/search?q=${encodeURIComponent(query.value)}`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
-  key: () => `search-query-${query.value}`,
+  key: `search-query-${query.value}`,
+  watch: [query],
+  lazy: true,
   immediate: true,
   default: () => ({ data: [] }),
 })

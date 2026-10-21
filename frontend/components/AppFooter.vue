@@ -74,7 +74,7 @@
     </div>
 
     <!-- Bottom Copyright -->
-    <div class="max-w-7xl mx-auto pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
+    <div class="max-w-7xl mx-auto pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm">
       <p>{{ hfConfig.copyright_text || '© ২০২৬ দৈনিক বাংলা নিউজপোর্টাল। সর্বস্বত্ব সংরক্ষিত।' }}</p>
       <div class="flex items-center gap-4 text-gray-500">
         <span>গোপনীয়তা নীতি</span>

@@ -12,20 +12,59 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $categories = Category::where('is_active', true)
-            ->where('show_in_nav', true)
-            ->orderBy('order')
-            ->get(['id', 'name', 'name_en', 'slug', 'color', 'order']);
+        $query = Category::whereNull('parent_id')
+            ->where('is_active', true);
+
+        if ($request->has('show_in_nav')) {
+            $query->where('show_in_nav', $request->boolean('show_in_nav'));
+        } else {
+            $query->where('show_in_nav', true);
+        }
+
+        $categories = $query->with([
+            'children' => fn ($q) => $q->where('is_active', true)->orderBy('order')->with([
+                'children' => fn ($sub) => $sub->where('is_active', true)->orderBy('order'),
+            ]),
+        ])
+        ->orderBy('order')
+        ->get();
 
         return $this->success($categories);
     }
 
+    private function resolveCategorySlug(string $slug): string
+    {
+        $aliases = [
+            'antarjatik'   => 'international',
+            'criket'       => 'cricket',
+            'futbol'       => 'football',
+            'annanno'      => 'sports-others',
+            'ananyo'       => 'others',
+            'biswa'        => 'international',
+            'world'        => 'international',
+            'dhorm'        => 'dhormo',
+            'pres-reliz'   => 'press-release',
+            'star-special' => 'ster-bisesh',
+            'europe'       => 'europ',
+        ];
+
+        return $aliases[$slug] ?? $slug;
+    }
+
     public function show(string $slug): JsonResponse
     {
-        $category = Category::where('slug', $slug)
+        $targetSlug = $this->resolveCategorySlug($slug);
+
+        $category = Category::where('slug', $targetSlug)
             ->where('is_active', true)
+            ->with([
+                'parent',
+                'children' => fn ($q) => $q->where('is_active', true)->orderBy('order')->with([
+                    'children' => fn ($sub) => $sub->where('is_active', true)->orderBy('order'),
+                ]),
+            ])
             ->first();
 
         if (!$category) {
@@ -35,28 +74,49 @@ class CategoryController extends Controller
         return $this->success($category);
     }
 
-    public function tree(): JsonResponse
+    public function tree(Request $request): JsonResponse
     {
-        $categories = Category::whereNull('parent_id')
-            ->where('is_active', true)
-            ->with(['children' => fn ($q) => $q->where('is_active', true)->orderBy('order')])
-            ->orderBy('order')
-            ->get();
+        $query = Category::whereNull('parent_id')
+            ->where('is_active', true);
+
+        if ($request->has('show_in_nav')) {
+            $query->where('show_in_nav', $request->boolean('show_in_nav'));
+        }
+
+        $categories = $query->with([
+            'children' => fn ($q) => $q->where('is_active', true)->orderBy('order')->with([
+                'children' => fn ($sub) => $sub->where('is_active', true)->orderBy('order'),
+            ]),
+        ])
+        ->orderBy('order')
+        ->get();
 
         return $this->success($categories);
     }
 
     public function posts(string $slug, Request $request): JsonResponse
     {
-        $category = Category::where('slug', $slug)->first();
+        $targetSlug = $this->resolveCategorySlug($slug);
+
+        $category = Category::where('slug', $targetSlug)->first();
 
         if (!$category) {
             return $this->notFound('Category not found');
         }
 
+        $childIds = $category->children()->pluck('id')->toArray();
+        $categoryIds = array_merge([$category->id], $childIds);
+
         $posts = Post::published()
-            ->where('category_id', $category->id)
-            ->with(['author:id,name', 'category:id,name,slug'])
+            ->where(function ($q) use ($categoryIds) {
+                $q->whereIn('category_id', $categoryIds)
+                  ->orWhereHas('secondaryCategories', fn ($sq) => $sq->whereIn('categories.id', $categoryIds));
+                foreach ($categoryIds as $cid) {
+                    $q->orWhereJsonContains('additional_category_ids', (int) $cid)
+                      ->orWhereJsonContains('additional_category_ids', (string) $cid);
+                }
+            })
+            ->with(['author:id,name,avatar', 'category:id,name,slug', 'secondaryCategories:id,name,slug', 'tags:id,name,slug'])
             ->latest('published_at')
             ->paginate((int) $request->get('per_page', 12));
 

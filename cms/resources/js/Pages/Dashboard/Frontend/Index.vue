@@ -469,7 +469,7 @@
                 <input
                   v-model="hfForm.prayer_time"
                   type="text"
-                  placeholder="🕌 মাগরিব ০৬:০৮ PM"
+                  placeholder="🕌 নামাজের সময়সূচি (অটোমেটিক)"
                   class="w-full border rounded-xl px-3 py-2 text-xs outline-none focus:border-red-500"
                 />
               </div>
@@ -984,7 +984,7 @@ const savingHeaderFooter = ref(false)
 const hfForm = ref({
   show_topbar: props.headerFooterConfig?.show_topbar ?? true,
   topbar_location: props.headerFooterConfig?.topbar_location ?? 'ঢাকা, বাংলাদেশ',
-  prayer_time: props.headerFooterConfig?.prayer_time ?? '🕌 মাগরিব ০৬:০৮ PM',
+  prayer_time: props.headerFooterConfig?.prayer_time ?? '🕌 নামাজের সময়সূচি (অটোমেটিক)',
   weather_text: props.headerFooterConfig?.weather_text ?? '🌦️ ২৮° সে.',
   site_tagline: props.headerFooterConfig?.site_tagline ?? 'সত্য ও ন্যায়ের সাথে সার্বক্ষণিক',
   show_epaper_btn: props.headerFooterConfig?.show_epaper_btn ?? true,

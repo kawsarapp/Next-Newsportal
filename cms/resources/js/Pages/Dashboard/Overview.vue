@@ -5,7 +5,7 @@
       <!-- Welcome Bar -->
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-xl font-bold text-gray-800">সুপ্রভাত, {{ $page.props.auth.user.name }} 👋</h2>
+          <h2 class="text-xl font-bold text-gray-800">সুপ্রভাত, {{ $page.props.auth?.user?.name ?? 'ইউজার' }} 👋</h2>
           <p class="text-sm text-gray-500 mt-0.5">{{ today }} — নিউজরুম ওভারভিউ</p>
         </div>
         <div class="flex gap-2">

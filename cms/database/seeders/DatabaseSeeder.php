@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             BangladeshDivisionSeeder::class,
             PortalSeeder::class,
+            SubeditorSettingSeeder::class,
             SuperAdminSeeder::class,
         ]);
     }

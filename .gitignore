@@ -32,3 +32,8 @@ Thumbs.db
 # DDEV
 .ddev/.dbimageBuild/
 .ddev/db_snapshots/
+.ddev_home/
+
+# Temporary / Scratch files
+scratch_*.png
+scratch/

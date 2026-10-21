@@ -48,6 +48,31 @@ class PostResource extends JsonResource
                 'slug' => $this->category->slug,
             ]),
 
+            // Area (Division & District)
+            'division_id'    => $this->division_id,
+            'district_id'    => $this->district_id,
+            'division'       => $this->division ? [
+                'id'      => $this->division->id,
+                'name'    => $this->division->name,
+                'bn_name' => $this->division->bn_name ?? $this->division->name,
+            ] : null,
+            'district'       => $this->district ? [
+                'id'          => $this->district->id,
+                'division_id' => $this->district->division_id,
+                'name'        => $this->district->name,
+                'bn_name'     => $this->district->bn_name ?? $this->district->name,
+            ] : null,
+
+            // Secondary Categories
+            'secondary_categories' => $this->whenLoaded('secondaryCategories', fn () =>
+                $this->secondaryCategories->map(fn ($c) => [
+                    'id'   => $c->id,
+                    'name' => $c->name,
+                    'slug' => $c->slug,
+                ])
+            ),
+            'additional_category_ids' => $this->additional_category_ids ?? [],
+
             // Tags
             'tags'           => $this->whenLoaded('tags', fn () =>
                 $this->tags->map(fn ($t) => ['id' => $t->id, 'name' => $t->name, 'slug' => $t->slug])

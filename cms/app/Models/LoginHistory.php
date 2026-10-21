@@ -12,6 +12,7 @@ class LoginHistory extends Model
     public const UPDATED_AT = null;
     public const CREATED_AT = 'created_at';
 
+    protected $table    = 'login_histories';
     protected $fillable = ['user_id','ip_address','user_agent','device_name','status','failure_reason','created_at'];
     protected $casts    = ['created_at' => 'datetime'];
 

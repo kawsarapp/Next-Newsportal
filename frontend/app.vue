@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen flex flex-col bg-gray-50/50">
+    <!-- Live Breaking News Bar (At the Very Top of Website) -->
+    <BreakingTicker :breakingNews="breakingNews" />
+
     <!-- Header with Utility, Brand, Nav & Mobile Drawer -->
     <AppHeader />
-
-    <!-- Live Breaking News Bar -->
-    <BreakingTicker :breakingNews="breakingNews" />
 
     <!-- Main Dynamic View (SPA Page Content) with bottom padding for mobile bar -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 pb-20 md:pb-6">
@@ -126,10 +126,13 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+
 const config = useRuntimeConfig()
+const refreshTrigger = useState('home-refresh-trigger', () => 0)
 
 // 1. Fetch breaking news
-const { data: breakingResponse } = await useFetch(`${config.public.apiBase}/posts/breaking`, {
+const { data: breakingResponse, refresh: refreshBreaking } = await useFetch(`${config.public.apiBase}/posts/breaking?limit=20`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
@@ -140,8 +143,16 @@ const { data: breakingResponse } = await useFetch(`${config.public.apiBase}/post
 
 const breakingNews = computed(() => breakingResponse.value?.data || [])
 
+// Watch logo click trigger to refresh ticker breaking news as well
+watch(refreshTrigger, (newVal, oldVal) => {
+  if (newVal > oldVal) {
+    refreshBreaking()
+  }
+})
+
 // 2. Scroll-to-Top State and Controller
 const showScrollTop = ref(false)
+let refreshInterval = null
 
 const onScroll = () => {
   if (process.client) {
@@ -161,12 +172,19 @@ const scrollToTop = () => {
 onMounted(() => {
   if (process.client) {
     window.addEventListener('scroll', onScroll, { passive: true })
+    // Periodically re-fetch ticker news every 45 seconds so newly published posts appear dynamically
+    refreshInterval = setInterval(() => {
+      refreshBreaking()
+    }, 45000)
   }
 })
 
 onUnmounted(() => {
   if (process.client) {
     window.removeEventListener('scroll', onScroll)
+    if (refreshInterval) {
+      clearInterval(refreshInterval)
+    }
   }
 })
 </script>

@@ -64,7 +64,7 @@
                 <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
                   {{ userInitials }}
                 </div>
-                <span class="hidden md:block text-gray-700">{{ $page.props.auth.user.name }}</span>
+                <span class="hidden md:block text-gray-700">{{ $page.props.auth?.user?.name ?? 'ইউজার' }}</span>
                 <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
@@ -121,6 +121,8 @@ onUnmounted(() => document.removeEventListener('click', handleClick))
 const navItems = [
   { label: 'ওভারভিউ',       icon: 'home',       route: 'dashboard.overview',    permission: null },
   { label: 'নিউজ',           icon: 'newspaper',  route: 'dashboard.posts.index', permission: 'post.view' },
+  { label: 'ফটাকার্ড ও সোশ্যাল', icon: 'camera', route: 'dashboard.social-publisher.index', permission: null },
+  { label: 'Subeditor24 ইন্টিগ্রেশন', icon: 'bolt', route: 'dashboard.subeditor.index', permission: null },
   { label: 'এডিটোরিয়াল',    icon: 'workflow',   route: 'dashboard.editorial.index', permission: 'editorial.review' },
   { label: 'ক্যাটাগরি',      icon: 'folder',     route: 'dashboard.categories.index', permission: 'category.view' },
   { label: 'রিপোর্টার',      icon: 'users',      route: 'dashboard.reporters.index', permission: 'reporter.view' },

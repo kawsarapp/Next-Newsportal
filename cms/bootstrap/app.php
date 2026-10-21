@@ -20,11 +20,20 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'external-news-post',
+            'get-categories',
+            'subeditor/*',
+        ]);
+
         $middleware->alias([
-            'portal.scope'   => \App\Http\Middleware\PortalScopeMiddleware::class,
-            'portal.active'  => \App\Http\Middleware\EnsurePortalActiveMiddleware::class,
-            'portal.module'  => \App\Http\Middleware\EnsureModuleEnabledMiddleware::class,
-            'audit'          => \App\Http\Middleware\AuditMiddleware::class,
+            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'portal.scope'       => \App\Http\Middleware\PortalScopeMiddleware::class,
+            'portal.active'      => \App\Http\Middleware\EnsurePortalActiveMiddleware::class,
+            'portal.module'      => \App\Http\Middleware\EnsureModuleEnabledMiddleware::class,
+            'audit'              => \App\Http\Middleware\AuditMiddleware::class,
         ]);
 
     })

@@ -13,7 +13,8 @@ class SearchController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = $request->get('q', '');
+        $rawQuery = (string) $request->get('q', '');
+        $query = trim(ltrim($rawQuery, '#'));
 
         if (empty($query)) {
             return $this->success([]);
@@ -22,11 +23,12 @@ class SearchController extends Controller
         $posts = Post::published()
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('excerpt', 'like', "%{$query}%");
+                  ->orWhere('excerpt', 'like', "%{$query}%")
+                  ->orWhereHas('tags', fn ($tq) => $tq->where('name', 'like', "%{$query}%")->orWhere('slug', 'like', "%{$query}%"));
             })
-            ->with(['author:id,name', 'category:id,name,slug'])
+            ->with(['author:id,name', 'category:id,name,slug', 'tags:id,name,slug'])
             ->latest('published_at')
-            ->limit(20)
+            ->limit(30)
             ->get();
 
         return $this->success($posts);

@@ -28,8 +28,8 @@ class MediaController extends Controller
             ];
         }, $files);
 
-        // API request (e.g. from MediaPickerModal or RichTipTapEditor via Axios without X-Inertia)
-        if (! $request->header('X-Inertia') && ($request->wantsJson() || $request->expectsJson() || $request->query('format') === 'json')) {
+        // API request (e.g. from MediaPickerModal or RichTipTapEditor via Axios)
+        if ($request->wantsJson() || $request->expectsJson() || $request->query('format') === 'json' || str_contains((string) $request->header('Accept'), 'json')) {
             return response()->json([
                 'media' => array_values(array_reverse($media)),
             ]);
@@ -43,6 +43,12 @@ class MediaController extends Controller
 
     public function upload(Request $request): RedirectResponse|JsonResponse
     {
+        $isJson = $request->expectsJson()
+            || $request->wantsJson()
+            || $request->ajax()
+            || str_contains((string) $request->header('Accept'), 'json')
+            || $request->hasHeader('X-Requested-With');
+
         // Support multiple file uploads
         if ($request->hasFile('files')) {
             $request->validate([
@@ -61,7 +67,7 @@ class MediaController extends Controller
                 ];
             }
 
-            if (! $request->header('X-Inertia') && ($request->expectsJson() || $request->wantsJson())) {
+            if ($isJson) {
                 return response()->json([
                     'success' => true,
                     'files'   => $uploaded,
@@ -80,9 +86,16 @@ class MediaController extends Controller
         $path = $request->file('file')->store('uploads', 'public');
         $url  = asset('storage/' . $path);
 
-        if (! $request->header('X-Inertia') && ($request->expectsJson() || $request->wantsJson())) {
+        if ($isJson) {
             return response()->json([
                 'success' => true,
+                'files'   => [
+                    [
+                        'name' => $request->file('file')->getClientOriginalName(),
+                        'path' => $path,
+                        'url'  => $url,
+                    ]
+                ],
                 'path'    => $path,
                 'url'     => $url,
             ]);
@@ -102,5 +115,24 @@ class MediaController extends Controller
         }
 
         return back()->with('error', 'ফাইল খুঁজে পাওয়া যায়নি।');
+    }
+
+    public function updateMeta(Request $request, string $media): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'title'    => 'nullable|string|max:255',
+            'caption'  => 'nullable|string|max:500',
+            'alt_text' => 'nullable|string|max:255',
+        ]);
+
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'মেটাডাটা সফলভাবে আপডেট করা হয়েছে!',
+                'data'    => $validated,
+            ]);
+        }
+
+        return back()->with('success', 'মেটাডাটা সফলভাবে আপডেট করা হয়েছে!');
     }
 }

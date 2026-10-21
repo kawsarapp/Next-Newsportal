@@ -21,7 +21,8 @@ class Post extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'portal_id', 'author_id', 'category_id',
+        'portal_id', 'author_id', 'category_id', 'additional_category_ids',
+        'division_id', 'district_id',
         'title', 'slug', 'excerpt', 'body',
         'featured_image', 'status', 'type',
         'is_breaking', 'is_featured', 'is_exclusive', 'is_sticky',
@@ -34,19 +35,20 @@ class Post extends Model
     ];
 
     protected $casts = [
-        'featured_image'  => 'array',
-        'schema_markup'   => 'array',
-        'status'          => PostStatus::class,
-        'type'            => PostType::class,
-        'is_breaking'     => 'boolean',
-        'is_featured'     => 'boolean',
-        'is_exclusive'    => 'boolean',
-        'is_sticky'       => 'boolean',
-        'is_corrected'    => 'boolean',
-        'allow_comments'  => 'boolean',
-        'published_at'    => 'datetime',
-        'scheduled_at'    => 'datetime',
-        'embargoed_until' => 'datetime',
+        'featured_image'          => 'array',
+        'schema_markup'           => 'array',
+        'additional_category_ids' => 'array',
+        'status'                  => PostStatus::class,
+        'type'                    => PostType::class,
+        'is_breaking'             => 'boolean',
+        'is_featured'             => 'boolean',
+        'is_exclusive'            => 'boolean',
+        'is_sticky'               => 'boolean',
+        'is_corrected'            => 'boolean',
+        'allow_comments'          => 'boolean',
+        'published_at'            => 'datetime',
+        'scheduled_at'            => 'datetime',
+        'embargoed_until'         => 'datetime',
     ];
 
     // ─── Global Scope (Portal Isolation) ─────────────────────────────────────
@@ -92,6 +94,21 @@ class Post extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function secondaryCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'category_post', 'post_id', 'category_id');
     }
 
     public function tags(): BelongsToMany

@@ -123,15 +123,20 @@
 </template>
 
 <script setup>
+definePageMeta({
+  key: route => route.fullPath,
+})
+
 const config = useRuntimeConfig()
 
 // 1. Fetch YouTube section config
-const { data: ytConfigResponse } = await useFetch(`${config.public.apiBase}/youtube-config`, {
+const { data: ytConfigResponse } = useFetch(`${config.public.apiBase}/youtube-config`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'video-page-yt-config',
+  lazy: true,
   default: () => ({ success: true, data: {} }),
 })
 

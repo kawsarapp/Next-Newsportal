@@ -82,7 +82,7 @@
             <input
               v-model="youtubeUrl"
               type="url"
-              placeholder="https://www.youtube.com/watch?v=... অথবা https://youtu.be/..."
+              placeholder="https://www.youtube.com/watch?v=... অথবা https://youtu.be/... অথবা https://youtube.com/shorts/..."
               class="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
             />
             <p class="text-xs text-gray-500 mt-1">
@@ -90,11 +90,60 @@
             </p>
           </div>
 
+          <!-- YouTube Video Orientation Selection -->
+          <div v-if="youtubeUrl" class="p-3 bg-red-50/60 border border-red-100 rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-gray-700">
+                ভিডিওর সাইজ ও ওরিয়েন্টেশন (Orientation):
+              </label>
+              <span v-if="youtubeOrientation === 'vertical'" class="text-[11px] font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                ⚡ অটো-ডিটেক্টেড শর্টস (9:16)
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                @click="youtubeOrientation = 'landscape'"
+                :class="[
+                  'p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-2.5 cursor-pointer',
+                  youtubeOrientation === 'landscape'
+                    ? 'bg-white border-red-600 text-red-900 font-semibold shadow-xs ring-2 ring-red-500/20'
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300'
+                ]"
+              >
+                <span class="text-xl">🖥️</span>
+                <div>
+                  <div class="font-bold text-gray-800">ল্যান্ডস্কেপ ভিডিও (16:9)</div>
+                  <div class="text-[11px] text-gray-500 font-normal">সাধারণ ইউটিউব ভিডিও</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                @click="youtubeOrientation = 'vertical'"
+                :class="[
+                  'p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-2.5 cursor-pointer',
+                  youtubeOrientation === 'vertical'
+                    ? 'bg-white border-red-600 text-red-900 font-semibold shadow-xs ring-2 ring-red-500/20'
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300'
+                ]"
+              >
+                <span class="text-xl">📱</span>
+                <div>
+                  <div class="font-bold text-gray-800">ভার্টিক্যাল / শর্টস (9:16)</div>
+                  <div class="text-[11px] text-gray-500 font-normal">ইউটিউব শর্টস (Shorts)</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <!-- YouTube Live Preview -->
-          <div v-if="parsedYoutubeEmbedUrl" class="rounded-xl overflow-hidden border border-gray-200 bg-black aspect-video max-h-64 mx-auto">
+          <div v-if="parsedYoutubeEmbedUrl" class="rounded-xl overflow-hidden border border-gray-200 bg-black flex justify-center p-2 max-h-80 mx-auto">
             <iframe
               :src="parsedYoutubeEmbedUrl"
-              class="w-full h-full"
+              :class="[
+                'border-0 rounded-lg shadow-sm',
+                youtubeOrientation === 'vertical' ? 'w-full max-w-[260px] aspect-[9/16]' : 'w-full max-w-[550px] aspect-video'
+              ]"
               frameborder="0"
               allowfullscreen
             ></iframe>
@@ -121,7 +170,7 @@
             <input
               v-model="facebookUrl"
               type="url"
-              placeholder="https://www.facebook.com/.../posts/... বা https://www.facebook.com/watch?v=..."
+              placeholder="https://www.facebook.com/.../posts/... বা https://www.facebook.com/reel/... বা https://www.facebook.com/watch?v=..."
               class="w-full px-3.5 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             />
             <div class="flex items-center gap-4 mt-2">
@@ -131,7 +180,7 @@
               </label>
             </div>
             <p class="text-xs text-gray-500 mt-1">
-              ফেসবুকের যেকোনো পাবলিক পোস্ট, ফটো অথবা ভিডিওর লিঙ্ক পেস্ট করুন।
+              ফেসবুকের যেকোনো পাবলিক পোস্ট, ফটো অথবা ভিডিও/রিলসের লিঙ্ক পেস্ট করুন।
             </p>
           </div>
 
@@ -142,7 +191,7 @@
             <textarea
               v-model="facebookCode"
               rows="4"
-              placeholder='<iframe src="https://www.facebook.com/plugins/post.php?..." width="500" height="600" ...></iframe>'
+              placeholder='<iframe src="https://www.facebook.com/plugins/video.php?..." width="500" height="600" ...></iframe>'
               class="w-full px-3.5 py-2.5 text-xs font-mono border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             ></textarea>
             <p class="text-xs text-gray-500 mt-1">
@@ -150,11 +199,76 @@
             </p>
           </div>
 
+          <!-- Facebook Video Orientation Selection (Landscape 16:9 vs Vertical Reel 9:16 vs Square 1:1) -->
+          <div v-if="facebookIsVideo || facebookMode === 'code' || facebookUrl" class="p-3 bg-blue-50/60 border border-blue-100 rounded-xl space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-gray-700">
+                ভিডিওর সাইজ ও ওরিয়েন্টেশন (Orientation):
+              </label>
+              <span v-if="effectiveFacebookOrientation === 'vertical'" class="text-[11px] font-semibold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
+                📱 রিলস / খাড়া (9:16)
+              </span>
+              <span v-else-if="effectiveFacebookOrientation === 'square'" class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                ⏹️ স্কয়ার / চারকোনা (1:1)
+              </span>
+              <span v-else class="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
+                💻 ল্যান্ডস্কেপ (16:9)
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                @click="facebookOrientation = 'landscape'"
+                :class="[
+                  'p-2.5 rounded-xl border text-center text-xs transition-all flex flex-col items-center justify-center gap-1 cursor-pointer',
+                  effectiveFacebookOrientation === 'landscape'
+                    ? 'bg-white border-blue-600 text-blue-900 font-semibold shadow-xs ring-2 ring-blue-500/20'
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300'
+                ]"
+              >
+                <span class="text-base">💻</span>
+                <div class="font-bold">ল্যান্ডস্কেপ (16:9)</div>
+                <div class="text-[10px] text-gray-500 font-normal">সাধারণ অনুভূমিক ভিডিও</div>
+              </button>
+              <button
+                type="button"
+                @click="facebookOrientation = 'vertical'"
+                :class="[
+                  'p-2.5 rounded-xl border text-center text-xs transition-all flex flex-col items-center justify-center gap-1 cursor-pointer',
+                  effectiveFacebookOrientation === 'vertical'
+                    ? 'bg-white border-blue-600 text-blue-900 font-semibold shadow-xs ring-2 ring-blue-500/20'
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300'
+                ]"
+              >
+                <span class="text-base">📱</span>
+                <div class="font-bold">রিলস / খাড়া (9:16)</div>
+                <div class="text-[10px] text-gray-500 font-normal">খাড়া মোবাইল ভিডিও</div>
+              </button>
+              <button
+                type="button"
+                @click="facebookOrientation = 'square'"
+                :class="[
+                  'p-2.5 rounded-xl border text-center text-xs transition-all flex flex-col items-center justify-center gap-1 cursor-pointer',
+                  effectiveFacebookOrientation === 'square'
+                    ? 'bg-white border-blue-600 text-blue-900 font-semibold shadow-xs ring-2 ring-blue-500/20'
+                    : 'bg-white/80 border-gray-200 text-gray-600 hover:bg-white hover:border-gray-300'
+                ]"
+              >
+                <span class="text-base">⏹️</span>
+                <div class="font-bold">স্কয়ার (1:1)</div>
+                <div class="text-[10px] text-gray-500 font-normal">চারকোনা ভিডিও / পোস্ট</div>
+              </button>
+            </div>
+          </div>
+
           <!-- Facebook Preview -->
-          <div v-if="parsedFacebookEmbedUrl" class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 max-h-72 flex justify-center">
+          <div v-if="parsedFacebookEmbedUrl" class="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 max-h-96 flex justify-center p-2">
             <iframe
               :src="parsedFacebookEmbedUrl"
-              class="w-full max-w-[500px] h-72 border-0"
+              :class="[
+                'border-0 rounded-lg shadow-sm',
+                effectiveFacebookOrientation === 'vertical' ? 'w-full max-w-[280px] aspect-[9/16]' : effectiveFacebookOrientation === 'square' ? 'w-full max-w-[360px] aspect-square' : 'w-full max-w-[550px] aspect-video'
+              ]"
               scrolling="no"
               frameborder="0"
               allowfullscreen="true"
@@ -262,12 +376,18 @@ const errorMessage = ref('')
 
 // YouTube
 const youtubeUrl = ref('')
+const youtubeOrientation = ref('landscape')
 
 // Facebook
 const facebookMode = ref('url')
 const facebookUrl = ref('')
 const facebookCode = ref('')
 const facebookIsVideo = ref(false)
+const facebookOrientation = ref('landscape')
+
+const effectiveFacebookOrientation = computed(() => {
+  return facebookOrientation.value || 'landscape'
+})
 
 // Twitter
 const twitterUrl = ref('')
@@ -275,10 +395,48 @@ const twitterUrl = ref('')
 // Custom
 const customEmbedCode = ref('')
 
+// Watch url to auto-detect video & orientation in YouTube
+watch(youtubeUrl, (val) => {
+  if (val) {
+    const lower = val.toLowerCase()
+    if (lower.includes('/shorts/') || lower.includes('shorts')) {
+      youtubeOrientation.value = 'vertical'
+    } else {
+      youtubeOrientation.value = 'landscape'
+    }
+  }
+})
+
 // Watch url to auto-detect video in Facebook
-watch(facebookUrl, (val) => {
-  if (val && (val.includes('/videos/') || val.includes('/watch') || val.includes('fb.watch') || val.includes('/reel/'))) {
-    facebookIsVideo.value = true
+watch(facebookUrl, (newVal) => {
+  if (newVal) {
+    const val = newVal.toLowerCase()
+    if (val.includes('/reel/') || val.includes('/reels/') || val.includes('reel') || val.includes('/videos/') || val.includes('/watch') || val.includes('fb.watch')) {
+      facebookIsVideo.value = true
+    }
+  }
+})
+
+// Watch code to auto-detect video and orientation in Facebook
+watch(facebookCode, (newVal) => {
+  if (newVal) {
+    const val = newVal.toLowerCase()
+    if (val.includes('plugins/video.php') || val.includes('/videos/') || val.includes('/reel/') || val.includes('/reels/')) {
+      facebookIsVideo.value = true
+    }
+    const widthMatch = newVal.match(/width=["']?(\d+)["']?/i)
+    const heightMatch = newVal.match(/height=["']?(\d+)["']?/i)
+    if (widthMatch && heightMatch) {
+      const w = parseFloat(widthMatch[1])
+      const h = parseFloat(heightMatch[1])
+      if (h > w * 1.3) {
+        facebookOrientation.value = 'vertical'
+      } else if (Math.abs(h - w) <= (w * 0.15)) {
+        facebookOrientation.value = 'square'
+      } else {
+        facebookOrientation.value = 'landscape'
+      }
+    }
   }
 })
 
@@ -295,18 +453,26 @@ const parsedYoutubeEmbedUrl = computed(() => {
   return videoId ? `https://www.youtube.com/embed/${videoId}` : null
 })
 
-// Facebook Parser
 const parsedFacebookEmbedUrl = computed(() => {
   if (facebookMode.value === 'code') {
     if (!facebookCode.value) return null
     const srcMatch = facebookCode.value.match(/src=["'](.*?)["']/)
-    return srcMatch ? srcMatch[1] : null
+    let url = srcMatch ? srcMatch[1] : null
+    if (url) {
+      url = url.replace(/&amp;/g, '&')
+    }
+    return url
   } else {
     if (!facebookUrl.value) return null
     const trimmed = facebookUrl.value.trim()
     const encoded = encodeURIComponent(trimmed)
-    if (facebookIsVideo.value) {
-      return `https://www.facebook.com/plugins/video.php?href=${encoded}&show_text=false&width=500`
+    const orientation = effectiveFacebookOrientation.value
+    const isReel = orientation === 'vertical'
+    const isSquare = orientation === 'square'
+    const isVideo = facebookIsVideo.value || isReel || isSquare || trimmed.includes('/videos/') || trimmed.includes('watch') || trimmed.includes('fb.watch') || trimmed.includes('/reel')
+    if (isVideo) {
+      const widthParam = isReel ? 360 : isSquare ? 500 : 680
+      return `https://www.facebook.com/plugins/video.php?href=${encoded}&show_text=false&width=${widthParam}`
     } else {
       return `https://www.facebook.com/plugins/post.php?href=${encoded}&show_text=true&width=500`
     }
@@ -350,12 +516,28 @@ const handleInsert = () => {
       errorMessage.value = 'সঠিক ইউটিউব ভিডিও লিঙ্ক (URL) দিন।'
       return
     }
-    emit('insert', {
-      src: embedUrl,
-      class: 'w-full aspect-video rounded-xl shadow-sm my-4',
-      'data-embed-type': 'youtube',
-      height: '450',
-    })
+    const isShorts = youtubeOrientation.value === 'vertical' || youtubeUrl.value.includes('/shorts/')
+    if (isShorts) {
+      emit('insert', {
+        src: embedUrl,
+        width: '100%',
+        class: 'w-full max-w-[380px] aspect-[9/16] mx-auto rounded-xl shadow-md my-6 border border-gray-200 block youtube-shorts',
+        style: 'aspect-ratio: 9/16; width: 100%; max-width: 380px; min-height: 580px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'youtube-shorts',
+        'data-orientation': 'vertical',
+        height: 'auto',
+      })
+    } else {
+      emit('insert', {
+        src: embedUrl,
+        width: '100%',
+        class: 'w-full max-w-[680px] aspect-video mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block',
+        style: 'aspect-ratio: 16/9; width: 100%; max-width: 680px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'youtube',
+        'data-orientation': 'landscape',
+        height: '450',
+      })
+    }
     close()
   } else if (activeTab.value === 'facebook') {
     const embedUrl = parsedFacebookEmbedUrl.value
@@ -363,14 +545,76 @@ const handleInsert = () => {
       errorMessage.value = 'সঠিক ফেসবুক লিঙ্ক অথবা সম্পূর্ণ iframe কোড দিন।'
       return
     }
-    emit('insert', {
-      src: embedUrl,
-      class: 'w-full max-w-[550px] mx-auto rounded-xl shadow-sm my-4 border border-gray-200 block',
-      height: facebookIsVideo.value ? '360' : '580',
-      'data-embed-type': 'facebook',
-      style: 'border:none;overflow:hidden',
-      scrolling: 'no',
-    })
+    const orientation = effectiveFacebookOrientation.value
+    const isReel = orientation === 'vertical'
+    const isSquare = orientation === 'square'
+    const isVideo = facebookIsVideo.value || 
+                    isReel || 
+                    isSquare || 
+                    embedUrl.includes('plugins/video.php') || 
+                    embedUrl.includes('/videos/') || 
+                    embedUrl.includes('watch') || 
+                    embedUrl.includes('fb.watch') ||
+                    embedUrl.includes('/reel')
+
+    if (isVideo && isReel) {
+      let finalSrc = embedUrl
+      if (facebookMode.value === 'url' || finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=360')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: 'w-full max-w-[380px] aspect-[9/16] mx-auto rounded-xl shadow-md my-6 border border-gray-200 block facebook-video facebook-video-vertical',
+        style: 'aspect-ratio: 9/16; width: 100%; max-width: 380px; height: auto; border:none; overflow:hidden; background-color: #000;',
+        'data-embed-type': 'facebook-reel',
+        'data-orientation': 'vertical',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else if (isVideo && isSquare) {
+      let finalSrc = embedUrl
+      if (facebookMode.value === 'url' || finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=520')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: 'w-full max-w-[520px] aspect-square mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block facebook-video facebook-video-square',
+        style: 'aspect-ratio: 1/1; width: 100%; max-width: 520px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'facebook-square',
+        'data-orientation': 'square',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else if (isVideo) {
+      let finalSrc = embedUrl
+      if (facebookMode.value === 'url' || finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=680')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: 'w-full max-w-[680px] aspect-video mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block facebook-video facebook-video-landscape',
+        style: 'aspect-ratio: 16/9; width: 100%; max-width: 680px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'facebook-video',
+        'data-orientation': 'landscape',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else {
+      emit('insert', {
+        src: embedUrl,
+        width: '100%',
+        class: 'w-full max-w-[550px] mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block',
+        height: '580',
+        'data-embed-type': 'facebook',
+        'data-orientation': 'landscape',
+        style: 'border:none;overflow:hidden',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    }
     close()
   } else if (activeTab.value === 'twitter') {
     const embedUrl = parsedTwitterEmbedUrl.value
@@ -380,6 +624,7 @@ const handleInsert = () => {
     }
     emit('insert', {
       src: embedUrl,
+      width: '100%',
       class: 'w-full max-w-[550px] mx-auto rounded-xl shadow-sm my-4 border border-gray-100 block',
       height: '560',
       'data-embed-type': 'twitter',
@@ -393,12 +638,93 @@ const handleInsert = () => {
       errorMessage.value = 'সঠিক iframe কোড অথবা ওয়েব লিঙ্ক দিন।'
       return
     }
-    emit('insert', {
-      src: embedUrl,
-      class: 'w-full rounded-xl shadow-sm my-4 border border-gray-200',
-      height: '450',
-      'data-embed-type': 'custom',
-    })
+    const isYtShorts = (embedUrl.includes('youtube.com') || embedUrl.includes('youtu.be')) && embedUrl.includes('/shorts/')
+    const isFbVideo = (embedUrl.includes('facebook.com') || embedUrl.includes('fb.watch')) && (embedUrl.includes('plugins/video.php') || embedUrl.includes('/videos/') || embedUrl.includes('watch') || embedUrl.includes('/reel'))
+    const isYt = !isYtShorts && (embedUrl.includes('youtube.com') || embedUrl.includes('youtu.be'))
+
+    let isVertical = false
+    let isSquare = false
+    const widthMatch = customEmbedCode.value.match(/width=["']?(\d+)["']?/i)
+    const heightMatch = customEmbedCode.value.match(/height=["']?(\d+)["']?/i)
+    if (widthMatch && heightMatch) {
+      const w = parseFloat(widthMatch[1])
+      const h = parseFloat(heightMatch[1])
+      if (h > w * 1.3) isVertical = true
+      else if (Math.abs(h - w) <= (w * 0.15)) isSquare = true
+    }
+
+    if (isYtShorts || (isFbVideo && isVertical)) {
+      let finalSrc = embedUrl
+      if (finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=360')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: isYtShorts
+          ? 'w-full max-w-[380px] aspect-[9/16] mx-auto rounded-xl shadow-md my-6 border border-gray-200 block youtube-shorts'
+          : 'w-full max-w-[380px] aspect-[9/16] mx-auto rounded-xl shadow-md my-6 border border-gray-200 block facebook-video facebook-video-vertical',
+        style: isYtShorts
+          ? 'aspect-ratio: 9/16; width: 100%; max-width: 380px; min-height: 580px; height: auto; border:none; overflow:hidden;'
+          : 'aspect-ratio: 9/16; width: 100%; max-width: 380px; height: auto; border:none; overflow:hidden; background-color: #000;',
+        'data-embed-type': isYtShorts ? 'youtube-shorts' : 'facebook-reel',
+        'data-orientation': 'vertical',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else if (isFbVideo && isSquare) {
+      let finalSrc = embedUrl
+      if (finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=500')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: 'w-full max-w-[500px] aspect-square mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block facebook-video facebook-video-square',
+        style: 'aspect-ratio: 1/1; width: 100%; max-width: 500px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'facebook-video',
+        'data-orientation': 'square',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else if (isFbVideo) {
+      let finalSrc = embedUrl
+      if (finalSrc.includes('plugins/video.php')) {
+        finalSrc = finalSrc.replace(/([?&])width=\d+/, '$1width=680')
+      }
+      emit('insert', {
+        src: finalSrc,
+        width: '100%',
+        class: 'w-full max-w-[680px] aspect-video mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block facebook-video facebook-video-landscape',
+        style: 'aspect-ratio: 16/9; width: 100%; max-width: 680px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'facebook-video',
+        'data-orientation': 'landscape',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else if (isYt) {
+      emit('insert', {
+        src: embedUrl,
+        width: '100%',
+        class: 'w-full max-w-[680px] aspect-video mx-auto rounded-xl shadow-sm my-6 border border-gray-200 block',
+        style: 'aspect-ratio: 16/9; width: 100%; max-width: 680px; height: auto; border:none; overflow:hidden;',
+        'data-embed-type': 'youtube',
+        'data-orientation': 'landscape',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    } else {
+      emit('insert', {
+        src: embedUrl,
+        width: '100%',
+        class: 'w-full max-w-[680px] mx-auto rounded-xl shadow-sm my-4 border border-gray-200 block',
+        height: '450',
+        'data-embed-type': 'custom',
+        style: 'border:none;overflow:hidden',
+        scrolling: 'no',
+        allowfullscreen: 'true',
+      })
+    }
     close()
   }
 }

@@ -60,7 +60,7 @@ class FrontendController extends Controller
             // Header Settings
             'show_topbar'      => true,
             'topbar_location'  => 'ঢাকা, বাংলাদেশ',
-            'prayer_time'      => '🕌 মাগরিব ০৬:০৮ PM',
+            'prayer_time'      => '🕌 নামাজের সময়সূচি (অটোমেটিক)',
             'weather_text'     => '🌦️ ২৮° সে.',
             'site_tagline'     => 'সত্য ও ন্যায়ের সাথে সার্বক্ষণিক',
             'show_epaper_btn'  => true,
@@ -334,7 +334,7 @@ class FrontendController extends Controller
         $config = $setting ? json_decode($setting->value, true) : [
             'show_topbar'      => true,
             'topbar_location'  => 'ঢাকা, বাংলাদেশ',
-            'prayer_time'      => '🕌 মাগরিব ০৬:০৮ PM',
+            'prayer_time'      => '🕌 নামাজের সময়সূচি (অটোমেটিক)',
             'weather_text'     => '🌦️ ২৮° সে.',
             'site_tagline'     => 'সত্য ও ন্যায়ের সাথে সার্বক্ষণিক',
             'show_epaper_btn'  => true,
@@ -426,5 +426,47 @@ class FrontendController extends Controller
             'success' => true,
             'data'    => $sections,
         ]);
+    }
+
+    public function appearance(): Response
+    {
+        return $this->index();
+    }
+
+    public function saveAppearance(Request $request): RedirectResponse
+    {
+        $portalId = auth()->user()?->getEffectivePortalId() ?? 1;
+
+        PortalSetting::updateOrCreate(
+            ['portal_id' => $portalId, 'key' => 'appearance_config'],
+            [
+                'value' => json_encode($request->all()),
+                'type'  => 'json',
+                'group' => 'frontend',
+            ]
+        );
+
+        return back()->with('success', 'অ্যাপিয়ারেন্স সেটিংস সফলভাবে সংরক্ষিত হয়েছে!');
+    }
+
+    public function featureFlags(): Response
+    {
+        return $this->index();
+    }
+
+    public function saveFeatureFlags(Request $request): RedirectResponse
+    {
+        $portalId = auth()->user()?->getEffectivePortalId() ?? 1;
+
+        PortalSetting::updateOrCreate(
+            ['portal_id' => $portalId, 'key' => 'feature_flags'],
+            [
+                'value' => json_encode($request->all()),
+                'type'  => 'json',
+                'group' => 'frontend',
+            ]
+        );
+
+        return back()->with('success', 'ফিচার ফ্ল্যাগ সফলভাবে সংরক্ষিত হয়েছে!');
     }
 }

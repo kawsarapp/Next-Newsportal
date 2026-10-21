@@ -22,7 +22,10 @@ class PostController extends Controller
     public function index(Request $request): PostCollection
     {
         $posts = $this->postService->getPublishedForApi(
-            filters: $request->only(['category', 'tag', 'type', 'author']),
+            filters: $request->only([
+                'category', 'category_id', 'tag', 'type', 'author',
+                'division_id', 'district_id', 'division', 'district', 'search'
+            ]),
             perPage: min($request->integer('per_page', 15), 50),
         );
 
@@ -36,14 +39,16 @@ class PostController extends Controller
     public function breaking(Request $request): JsonResponse
     {
         $breaking = $this->postService->getBreaking(
-            limit: min($request->integer('limit', 5), 10)
+            limit: min($request->integer('limit', 20), 30)
         );
 
         return $this->success($breaking->map(fn ($p) => [
-            'id'           => $p->id,
-            'title'        => $p->title,
-            'slug'         => $p->slug,
-            'published_at' => $p->published_at,
+            'id'            => $p->id,
+            'title'         => $p->title,
+            'slug'          => $p->slug,
+            'published_at'  => $p->published_at,
+            'is_breaking'   => (bool) $p->is_breaking,
+            'category_name' => $p->category?->name,
         ]));
     }
 
@@ -66,13 +71,15 @@ class PostController extends Controller
      */
     public function show(string $slug): JsonResponse
     {
-        $post = $this->postService->findBySlug($slug);
+        $decoded = urldecode($slug);
+        $post = $this->postService->findBySlug($slug) ?? $this->postService->findBySlug($decoded);
 
         if (! $post) {
             return $this->notFound('Post not found.');
         }
 
-        return $this->success(new PostResource($post));
+        return $this->success(new PostResource($post))
+            ->header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     }
 
     /**
@@ -81,17 +88,22 @@ class PostController extends Controller
      */
     public function recordView(int $id, Request $request): JsonResponse
     {
-        dispatch(function () use ($id, $request) {
+        $ip = $request->ip();
+        $userAgent = $request->userAgent();
+        $referer = $request->header('Referer');
+        $deviceType = $this->detectDevice($userAgent);
+
+        dispatch(static function () use ($id, $ip, $userAgent, $referer, $deviceType) {
             $post = \App\Models\Post::find($id);
             if ($post) {
                 $post->incrementViewCount();
                 \App\Models\PostViewLog::create([
                     'post_id'     => $post->id,
                     'portal_id'   => $post->portal_id,
-                    'ip_address'  => $request->ip(),
-                    'user_agent'  => $request->userAgent(),
-                    'referer'     => $request->header('Referer'),
-                    'device_type' => $this->detectDevice($request->userAgent()),
+                    'ip_address'  => $ip,
+                    'user_agent'  => $userAgent,
+                    'referer'     => $referer,
+                    'device_type' => $deviceType,
                     'viewed_at'   => now(),
                 ]);
             }

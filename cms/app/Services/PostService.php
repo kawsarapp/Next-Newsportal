@@ -9,6 +9,7 @@ use App\Domain\Post\Events\PostPublished;
 use App\Domain\Post\Events\PostStatusChanged;
 use App\Models\Post;
 use App\Models\Portal;
+use App\Models\Category;
 use App\Models\PostRevision;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
@@ -49,7 +50,12 @@ class PostService
     {
         $query = Post::withoutGlobalScopes()
                      ->where('portal_id', $this->getPortalId())
-                     ->with(['author:id,name,avatar', 'category:id,name,slug'])
+                     ->with([
+                         'author:id,name,avatar',
+                         'category:id,name,slug',
+                         'division:id,name,bn_name',
+                         'district:id,division_id,name,bn_name',
+                     ])
                      ->latest('updated_at');
 
         if (! empty($filters['status'])) {
@@ -64,7 +70,20 @@ class PostService
         }
 
         if (! empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
+            $catId = (int) $filters['category_id'];
+            $childrenIds = Category::where('parent_id', $catId)->pluck('id');
+            $grandChildrenIds = Category::whereIn('parent_id', $childrenIds)->pluck('id');
+            $allIds = $childrenIds->merge($grandChildrenIds)->push($catId)->unique()->all();
+            $query->where(function ($q) use ($allIds) {
+                $q->whereIn('category_id', $allIds)
+                  ->orWhereHas('secondaryCategories', fn ($sq) => $sq->whereIn('categories.id', $allIds));
+            });
+        }
+        if (! empty($filters['division_id'])) {
+            $query->where('division_id', $filters['division_id']);
+        }
+        if (! empty($filters['district_id'])) {
+            $query->where('district_id', $filters['district_id']);
         }
         if (! empty($filters['author_id'])) {
             $query->where('author_id', $filters['author_id']);
@@ -84,24 +103,112 @@ class PostService
 
     public function getPublishedForApi(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
+        $categorySlug = $filters['category'] ?? null;
+        $categoryIds = [];
+
+        if (! empty($filters['category_id'])) {
+            $catId = (int) $filters['category_id'];
+            $childrenIds = Category::where('parent_id', $catId)->pluck('id');
+            $grandChildrenIds = Category::whereIn('parent_id', $childrenIds)->pluck('id');
+            $categoryIds = $childrenIds->merge($grandChildrenIds)->push($catId)->unique()->all();
+        } elseif (! empty($categorySlug)) {
+            $cat = Category::where('slug', $categorySlug)->first();
+            if ($cat) {
+                $childrenIds = Category::where('parent_id', $cat->id)->pluck('id');
+                $grandChildrenIds = Category::whereIn('parent_id', $childrenIds)->pluck('id');
+                $categoryIds = $childrenIds->merge($grandChildrenIds)->push($cat->id)->unique()->all();
+            }
+        }
+
         return Post::published()
-                   ->with(['author:id,name,avatar', 'category:id,name,slug', 'tags:id,name,slug'])
-                   ->when(! empty($filters['category']), fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $filters['category'])))
+                   ->with([
+                       'author:id,name,avatar',
+                       'category:id,name,slug',
+                       'division:id,name,bn_name',
+                       'district:id,division_id,name,bn_name',
+                       'secondaryCategories:id,name,slug',
+                       'tags:id,name,slug',
+                   ])
+                   ->when(! empty($categoryIds), function ($q) use ($categoryIds) {
+                       $q->where(function ($sq) use ($categoryIds) {
+                           $sq->whereIn('category_id', $categoryIds)
+                              ->orWhereHas('secondaryCategories', fn ($scq) => $scq->whereIn('categories.id', $categoryIds));
+                           foreach ($categoryIds as $cid) {
+                               $sq->orWhereJsonContains('additional_category_ids', (int) $cid)
+                                  ->orWhereJsonContains('additional_category_ids', (string) $cid);
+                           }
+                       });
+                   })
+                   ->when(empty($categoryIds) && ! empty($categorySlug), function ($q) use ($categorySlug) {
+                       $q->where(function ($sq) use ($categorySlug) {
+                           $sq->whereHas('category', fn ($c) => $c->where('slug', $categorySlug))
+                              ->orWhereHas('secondaryCategories', fn ($c) => $c->where('slug', $categorySlug));
+                       });
+                   })
+                   ->when(! empty($filters['division_id']), fn ($q) => $q->where('division_id', $filters['division_id']))
+                   ->when(! empty($filters['district_id']), fn ($q) => $q->where('district_id', $filters['district_id']))
+                   ->when(! empty($filters['division']), function ($q) use ($filters) {
+                       $val = $filters['division'];
+                       if (is_numeric($val)) {
+                           $q->where('division_id', $val);
+                       } else {
+                           $q->whereHas('division', fn ($dq) => $dq->where('name', $val)->orWhere('name_en', $val)->orWhere('bn_name', $val));
+                       }
+                   })
+                   ->when(! empty($filters['district']), function ($q) use ($filters) {
+                       $val = $filters['district'];
+                       if (is_numeric($val)) {
+                           $q->where('district_id', $val);
+                       } else {
+                           $q->whereHas('district', fn ($dq) => $dq->where('name', $val)->orWhere('name_en', $val)->orWhere('bn_name', $val));
+                       }
+                   })
                    ->when(! empty($filters['tag']),      fn ($q) => $q->whereHas('tags', fn ($t) => $t->where('slug', $filters['tag'])))
                    ->when(! empty($filters['type']),     fn ($q) => $q->where('type', $filters['type']))
+                   ->when(! empty($filters['search']), function ($q) use ($filters) {
+                       $search = trim($filters['search']);
+                       $q->where(function ($sq) use ($search) {
+                           $sq->where('title', 'like', "%{$search}%")
+                              ->orWhere('excerpt', 'like', "%{$search}%");
+                       });
+                   })
                    ->latest('published_at')
                    ->paginate($perPage);
     }
 
-    public function getBreaking(int $limit = 5): \Illuminate\Support\Collection
+    public function getBreaking(int $limit = 20): \Illuminate\Support\Collection
     {
-        return Post::breaking()->limit($limit)->get(['id', 'title', 'slug', 'published_at']);
+        $breaking = Post::breaking()
+            ->with('category:id,name,slug')
+            ->latest('published_at')
+            ->limit($limit)
+            ->get(['id', 'title', 'slug', 'published_at', 'is_breaking', 'category_id']);
+
+        $needed = $limit - $breaking->count();
+        if ($needed > 0) {
+            $latest = Post::published()
+                ->whereNotIn('id', $breaking->pluck('id'))
+                ->with('category:id,name,slug')
+                ->latest('published_at')
+                ->limit($needed)
+                ->get(['id', 'title', 'slug', 'published_at', 'is_breaking', 'category_id']);
+            $breaking = $breaking->merge($latest);
+        }
+
+        return $breaking;
     }
 
     public function getFeatured(int $limit = 10): \Illuminate\Support\Collection
     {
         return Post::featured()
-                   ->with(['author:id,name,avatar', 'category:id,name,slug', 'tags:id,name,slug'])
+                   ->with([
+                       'author:id,name,avatar',
+                       'category:id,name,slug',
+                       'division:id,name,bn_name',
+                       'district:id,division_id,name,bn_name',
+                       'secondaryCategories:id,name,slug',
+                       'tags:id,name,slug',
+                   ])
                    ->latest('published_at')
                    ->limit($limit)
                    ->get();
@@ -109,10 +216,55 @@ class PostService
 
     public function findBySlug(string $slug): ?Post
     {
-        return Post::published()
-                     ->where('slug', $slug)
-                     ->with(['author', 'category', 'tags'])
-                     ->first();
+        // Pre-load model classes so PHP unserialize from file/redis cache never encounters __PHP_Incomplete_Class
+        class_exists(Post::class);
+        class_exists(\App\Models\Category::class);
+        class_exists(\App\Models\Division::class);
+        class_exists(\App\Models\District::class);
+        class_exists(\App\Models\User::class);
+        class_exists(\App\Models\Tag::class);
+
+        $portalId = $this->getPortalId();
+        $decoded = trim(urldecode($slug));
+        $cacheKey = "portal:{$portalId}:post:slug:" . md5($decoded !== '' ? $decoded : $slug);
+
+        $cached = Cache::get($cacheKey);
+        if ($cached instanceof Post) {
+            return $cached;
+        }
+
+        $relations = [
+            'author:id,name,avatar',
+            'category:id,name,slug',
+            'division:id,name,bn_name',
+            'district:id,division_id,name,bn_name',
+            'secondaryCategories:id,name,slug',
+            'tags:id,name,slug',
+        ];
+
+        // 1. Try matching slug directly (exact or decoded)
+        $post = Post::published()->where('slug', $slug)->with($relations)->first();
+        if (! $post && $decoded !== $slug) {
+            $post = Post::published()->where('slug', $decoded)->with($relations)->first();
+        }
+
+        // 2. Fallback: match by title (exact or like) or ID if numeric
+        if (! $post) {
+            $post = Post::published()->where('title', $decoded)->with($relations)->first()
+                ?? Post::published()->where('title', 'like', "%{$decoded}%")->with($relations)->first();
+
+            if (! $post && is_numeric($decoded)) {
+                $post = Post::published()->where('id', (int) $decoded)->with($relations)->first();
+            }
+        }
+
+        if ($post) {
+            Cache::put($cacheKey, $post, now()->addHours(6));
+            Cache::put("portal:{$portalId}:post:slug:{$post->slug}", $post, now()->addHours(6));
+            Cache::put("portal:{$portalId}:post:slug:" . md5($post->slug), $post, now()->addHours(6));
+        }
+
+        return $post;
     }
 
     // ─── Write ────────────────────────────────────────────────────────────────
@@ -125,8 +277,16 @@ class PostService
         $data['slug']      = $this->generateUniqueSlug($data['title']);
         $data['status']    = PostStatus::Draft->value;
 
-        return DB::transaction(function () use ($data, $portalId) {
+        $secondaryCategoryIds = $data['secondary_category_ids'] ?? [];
+        unset($data['secondary_category_ids']);
+
+        $post = DB::transaction(function () use ($data, $portalId, $secondaryCategoryIds) {
             $post = Post::withoutGlobalScopes()->create($data);
+
+            if (! empty($secondaryCategoryIds)) {
+                $post->secondaryCategories()->sync($secondaryCategoryIds);
+                $post->update(['additional_category_ids' => array_values($secondaryCategoryIds)]);
+            }
 
             // Create editorial workflow
             $post->workflow()->create([
@@ -136,6 +296,10 @@ class PostService
 
             return $post;
         });
+
+        $this->clearPostCache($post);
+
+        return $post;
     }
 
 
@@ -146,6 +310,14 @@ class PostService
 
         if (($data['status'] ?? null) === 'published' && empty($post->published_at) && empty($data['published_at'])) {
             $data['published_at'] = now();
+        }
+
+        $secondaryCategoryIds = $data['secondary_category_ids'] ?? null;
+        unset($data['secondary_category_ids']);
+
+        if ($secondaryCategoryIds !== null) {
+            $post->secondaryCategories()->sync($secondaryCategoryIds);
+            $data['additional_category_ids'] = array_values($secondaryCategoryIds);
         }
 
         $post->update($data);
@@ -263,13 +435,19 @@ class PostService
         ]);
     }
 
-    private function clearPostCache(Post $post): void
+    public function clearPostCache(Post $post): void
     {
         $portalId = $this->getPortalId();
         Cache::forget("portal:{$portalId}:post:slug:{$post->slug}");
+        Cache::forget("portal:{$portalId}:post:slug:" . md5($post->slug));
+        if (! empty($post->title)) {
+            Cache::forget("portal:{$portalId}:post:slug:" . md5($post->title));
+        }
         Cache::forget("portal:{$portalId}:post_counts");
         Cache::forget("portal:{$portalId}:breaking:5");
         Cache::forget("portal:{$portalId}:breaking:10");
+        Cache::forget("portal:{$portalId}:breaking:15");
+        Cache::forget("portal:{$portalId}:breaking:20");
 
         try {
             Cache::increment("portal:{$portalId}:posts_version");

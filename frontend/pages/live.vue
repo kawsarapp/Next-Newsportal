@@ -144,15 +144,20 @@
 </template>
 
 <script setup>
+definePageMeta({
+  key: route => route.fullPath,
+})
+
 const config = useRuntimeConfig()
 
 // 1. Live blog timeline data
-const { data: liveResponse } = await useFetch(`${config.public.apiBase}/m/LiveBlogCoverage`, {
+const { data: liveResponse } = useFetch(`${config.public.apiBase}/m/LiveBlogCoverage`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'page-live-blog',
+  lazy: true,
   default: () => ({
     success: true,
     event_title: 'চলমান ঘটনা: লাইভ কাভারেজ',
@@ -169,12 +174,13 @@ const { data: liveResponse } = await useFetch(`${config.public.apiBase}/m/LiveBl
 const liveData = computed(() => liveResponse.value?.success ? liveResponse.value : null)
 
 // 2. YouTube Live & Videos config from CMS
-const { data: ytResponse } = await useFetch(`${config.public.apiBase}/youtube-config`, {
+const { data: ytResponse } = useFetch(`${config.public.apiBase}/youtube-config`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'page-youtube-live-config',
+  lazy: true,
   default: () => ({ success: true, data: {} }),
 })
 

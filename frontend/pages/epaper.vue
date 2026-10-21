@@ -1123,6 +1123,10 @@
 </template>
 
 <script setup>
+definePageMeta({
+  key: route => route.fullPath,
+})
+
 const config = useRuntimeConfig()
 
 // View Mode State: 'broadsheet' or 'feed'
@@ -1515,12 +1519,13 @@ const defaultEpaperData = {
 }
 
 // Fetch Edition Data from backend API with fallback
-const { data: epaperResponse } = await useFetch(() => `${config.public.apiBase}/m/EPaperViewer?date=${selectedDate.value}`, {
+const { data: epaperResponse } = useFetch(() => `${config.public.apiBase}/m/EPaperViewer?date=${selectedDate.value}`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: `page-epaper-viewer-${selectedDate.value}`,
+  lazy: true,
   default: () => defaultEpaperData,
 })
 

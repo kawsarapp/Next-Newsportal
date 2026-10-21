@@ -7,6 +7,19 @@
 
 html {
   scroll-behavior: smooth;
+  font-size: 17.5px;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 18.5px;
+  }
 }
 
 body {
@@ -17,7 +30,11 @@ body {
   padding: 0;
   overflow-x: hidden;
   max-width: 100vw;
+  font-size: 1rem;
+  line-height: 1.65;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Page transitions for pure SPA feel */
@@ -33,8 +50,8 @@ body {
 
 /* Article rich text formatting */
 .article-content {
-  font-size: 1.125rem;
-  line-height: 1.85;
+  font-size: 1.2rem;
+  line-height: 1.95;
   color: #1f2937;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -68,8 +85,8 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.article-content h2 { font-size: 1.5rem; }
-.article-content h3 { font-size: 1.25rem; }
+.article-content h2 { font-size: 1.65rem; }
+.article-content h3 { font-size: 1.35rem; }
 
 .article-content ul,
 .article-content ol {
@@ -90,9 +107,12 @@ body {
 
 .article-content img {
   border-radius: 0.75rem;
-  margin: 1.5rem 0;
+  margin: 1.75rem auto;
   max-width: 100%;
   height: auto;
+  display: block;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* Responsive Video & Social Media Embeds */
@@ -115,9 +135,114 @@ body {
   height: auto !important;
 }
 
-.article-content iframe[src*="facebook.com"],
-.article-content iframe[data-embed-type="facebook"] {
+/* 1. Landscape Videos (16:9) */
+.article-content iframe.facebook-video-landscape,
+.article-content iframe[data-embed-type="facebook-video"],
+.article-content iframe[data-orientation="landscape"],
+.article-content iframe[data-embed-type="youtube"],
+.article-content iframe[src*="facebook.com/plugins/video"]:not([data-orientation="vertical"]):not([data-orientation="square"]):not(.facebook-video-vertical):not(.facebook-video-square),
+.article-content iframe[src*="plugins/video.php"]:not([data-orientation="vertical"]):not([data-orientation="square"]):not(.facebook-video-vertical):not(.facebook-video-square),
+.article-content iframe.facebook-video:not(.facebook-video-vertical):not(.facebook-video-square):not([data-orientation="vertical"]):not([data-orientation="square"]) {
+  aspect-ratio: 16 / 9 !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* 2. Vertical Videos / Reels (9:16) */
+.article-content iframe.facebook-video-vertical,
+.article-content iframe[data-embed-type="facebook-reel"],
+.article-content iframe[data-orientation="vertical"] {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+  background-color: #000 !important;
+}
+
+/* 3. Facebook Square Videos (1:1) */
+.article-content iframe.facebook-video-square,
+.article-content iframe[data-embed-type="facebook-square"],
+.article-content iframe[data-orientation="square"] {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  max-width: 520px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+
+/* 4. YouTube Shorts (Kept untouched and separate) */
+.article-content iframe[src*="youtube.com/shorts/"],
+.article-content iframe[data-embed-type="youtube-shorts"] {
+  aspect-ratio: 9 / 16 !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  min-height: 560px !important;
+  height: auto !important;
+  display: block !important;
+  margin: 1.5rem auto !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+}
+
+@media (max-width: 640px) {
+  .article-content iframe.facebook-video-vertical,
+  .article-content iframe[data-embed-type="facebook-reel"],
+  .article-content iframe[data-orientation="vertical"] {
+    max-width: min(100%, 340px) !important;
+    width: 100% !important;
+    aspect-ratio: 9 / 16 !important;
+    height: auto !important;
+  }
+
+  .article-content iframe.facebook-video-square,
+  .article-content iframe[data-embed-type="facebook-square"],
+  .article-content iframe[data-orientation="square"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    height: auto !important;
+  }
+
+  .article-content iframe.facebook-video-landscape,
+  .article-content iframe[data-orientation="landscape"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    height: auto !important;
+  }
+
+  .article-content iframe[src*="youtube.com/shorts/"],
+  .article-content iframe[data-embed-type="youtube-shorts"] {
+    max-width: 340px !important;
+    min-height: 500px !important;
+  }
+}
+
+/* Facebook Post / Timeline Embeds */
+.article-content iframe[src*="facebook.com/plugins/post"],
+.article-content iframe[src*="plugins/post.php"],
+.article-content iframe[data-embed-type="facebook-post"],
+.article-content iframe[data-embed-type="facebook"]:not([src*="video"]):not(.facebook-video) {
   max-width: 550px;
+  width: 100% !important;
+  min-height: 420px;
+  display: block;
+  margin: 1.5rem auto;
 }
 
 .article-content iframe[src*="twitter.com"],
@@ -149,5 +274,24 @@ body {
   background-color: #cbd5e1;
   border-radius: 9999px;
 }
+
+/* Hide scrollbar for clean horizontal scrolls */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth horizontal touch scrolling */
+.touch-scroll-x {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  overscroll-behavior-x: contain !important;
+  scroll-behavior: smooth !important;
+}
+
 
 
