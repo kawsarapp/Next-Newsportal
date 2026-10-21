@@ -358,6 +358,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">ক্যাটাগরির নাম (বাংলা) <span class="text-red-500">*</span></label>
               <input
                 v-model="form.name"
+                @input="handleNameInput"
                 type="text"
                 required
                 placeholder="উদা: জাতীয় / খুলনা"
@@ -369,6 +370,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">ইংরেজি নাম</label>
               <input
                 v-model="form.name_en"
+                @input="handleNameEnInput"
                 type="text"
                 placeholder="e.g. National / Khulna"
                 class="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:border-red-500"
@@ -399,10 +401,14 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">স্লাগ (URL)</label>
               <input
                 v-model="form.slug"
+                @input="isSlugTouched = true"
                 type="text"
                 placeholder="national"
                 class="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:border-red-500"
               />
+              <p class="text-[11px] text-gray-500 mt-1">
+                স্লাগ ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে ইউনিক স্লাগ তৈরি হবে।
+              </p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -482,6 +488,62 @@ const showModal = ref(false)
 const editItem = ref(null)
 const searchQuery = ref('')
 const activeTab = ref('all')
+const isSlugTouched = ref(false)
+
+const slugify = (text) => {
+  if (!text) return ''
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+}
+
+const bnToEnMap = {
+  'অ': 'o', 'আ': 'a', 'ই': 'i', 'ঈ': 'i', 'উ': 'u', 'ঊ': 'u', 'ঋ': 'ri', 'এ': 'e', 'ঐ': 'oi', 'ও': 'o', 'ঔ': 'ou',
+  'ক': 'k', 'খ': 'kh', 'গ': 'g', 'ঘ': 'gh', 'ঙ': 'ng',
+  'চ': 'ch', 'ছ': 'chh', 'জ': 'j', 'ঝ': 'jh', 'ঞ': 'n',
+  'ট': 't', 'ঠ': 'th', 'ড': 'd', 'ঢ': 'dh', 'ণ': 'n',
+  'ত': 't', 'থ': 'th', 'দ': 'd', 'ধ': 'dh', 'ন': 'n',
+  'প': 'p', 'ফ': 'f', 'ব': 'b', 'ভ': 'bh', 'ম': 'm',
+  'য': 'z', 'র': 'r', 'ল': 'l', 'শ': 'sh', 'ষ': 'sh', 'স': 's', 'হ': 'h',
+  'ড়': 'r', 'ঢ়': 'rh', 'য়': 'y', 'ৎ': 't', 'ং': 'ng', 'ঃ': 'h', 'ঁ': '',
+  'া': 'a', 'ি': 'i', 'ী': 'i', 'ু': 'u', 'ূ': 'u', 'ৃ': 'ri', 'ে': 'e', 'ৈ': 'oi', 'ো': 'o', 'ৌ': 'ou', '্': '',
+  '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9', '০': '0',
+}
+
+const transliterateBengali = (text) => {
+  if (!text) return ''
+  let result = ''
+  for (const char of text) {
+    if (bnToEnMap[char] !== undefined) {
+      result += bnToEnMap[char]
+    } else {
+      result += char
+    }
+  }
+  return slugify(result)
+}
+
+const autoGenerateSlug = () => {
+  if (isSlugTouched.value) return
+  if (form.name_en && form.name_en.trim()) {
+    form.slug = slugify(form.name_en)
+  } else if (form.name && form.name.trim()) {
+    const transliterated = transliterateBengali(form.name)
+    form.slug = transliterated || ''
+  }
+}
+
+const handleNameInput = () => {
+  autoGenerateSlug()
+}
+
+const handleNameEnInput = () => {
+  autoGenerateSlug()
+}
 
 const form = useForm({
   name: '',
@@ -653,6 +715,7 @@ const openModal = (item = null, parentId = null) => {
     form.color = item.color || '#e63946'
     form.show_in_nav = Boolean(item.show_in_nav)
     form.is_active = Boolean(item.is_active)
+    isSlugTouched.value = Boolean(item.slug)
   } else {
     form.reset()
     form.parent_id = parentId !== null ? parentId : null
@@ -660,6 +723,7 @@ const openModal = (item = null, parentId = null) => {
     form.color = '#e63946'
     form.show_in_nav = true
     form.is_active = true
+    isSlugTouched.value = false
   }
   showModal.value = true
 }

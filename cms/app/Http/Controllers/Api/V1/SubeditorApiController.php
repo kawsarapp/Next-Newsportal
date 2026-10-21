@@ -186,11 +186,26 @@ class SubeditorApiController extends Controller
 
             if (!$category && $request->filled('category')) {
                 $catInput = trim((string) $request->input('category'));
+                $searchNames = [$catInput];
+                if (str_contains($catInput, '➔')) {
+                    $parts = explode('➔', $catInput);
+                    $childName = trim(end($parts));
+                    if (!empty($childName)) {
+                        $searchNames[] = $childName;
+                    }
+                } elseif (str_contains($catInput, '->')) {
+                    $parts = explode('->', $catInput);
+                    $childName = trim(end($parts));
+                    if (!empty($childName)) {
+                        $searchNames[] = $childName;
+                    }
+                }
+
                 $category = Category::withoutGlobalScopes()
                     ->where('portal_id', $portalId)
-                    ->where(function ($q) use ($catInput) {
-                        $q->where('name', $catInput)
-                          ->orWhere('name_en', $catInput)
+                    ->where(function ($q) use ($searchNames, $catInput) {
+                        $q->whereIn('name', $searchNames)
+                          ->orWhereIn('name_en', $searchNames)
                           ->orWhere('slug', Str::slug($catInput))
                           ->orWhere('slug', $catInput);
                     })
@@ -388,9 +403,20 @@ class SubeditorApiController extends Controller
         $categories = Category::withoutGlobalScopes()
             ->where('is_active', true)
             ->where('portal_id', $portalId)
-            ->select('id', 'name')
+            ->with('parent:id,name')
+            ->orderBy('parent_id')
             ->orderBy('order')
-            ->get();
+            ->get()
+            ->map(function ($cat) {
+                $displayName = $cat->parent ? "{$cat->parent->name} ➔ {$cat->name}" : $cat->name;
+                return [
+                    'id'        => $cat->id,
+                    'name'      => $displayName,
+                    'raw_name'  => $cat->name,
+                    'slug'      => $cat->slug,
+                    'parent_id' => $cat->parent_id,
+                ];
+            });
 
         return response()->json($categories);
     }

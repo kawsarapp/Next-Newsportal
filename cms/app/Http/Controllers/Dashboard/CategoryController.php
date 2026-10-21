@@ -11,6 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -79,6 +80,39 @@ class CategoryController extends Controller
         return back()->with('success', 'ক্যাটাগরির ক্রম সফলভাবে আপডেট করা হয়েছে!');
     }
 
+    /**
+     * Generate a robust unique slug within the portal.
+     * Prevents duplicate entry or empty slug issues when pure Bengali text is used.
+     */
+    private function generateUniqueSlug(string $name, ?string $nameEn, ?string $customSlug, int $portalId, ?int $ignoreId = null): string
+    {
+        $slug = !empty($customSlug)
+            ? Str::slug($customSlug)
+            : (!empty($nameEn) ? Str::slug($nameEn) : Str::slug($name));
+
+        // If Str::slug resulted in empty string (e.g. pure Bengali text without transliteration)
+        if (empty($slug)) {
+            // Try to create a phonetic transliteration or clean fallback
+            $hash = substr(md5($name . microtime()), 0, 6);
+            $slug = 'cat-' . $hash;
+        }
+
+        $baseSlug = $slug;
+        $counter = 1;
+        while (
+            Category::withoutGlobalScopes()
+                ->where('portal_id', $portalId)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
+    }
+
     public function store(Request $request): RedirectResponse|JsonResponse
     {
         $portalId = auth()->user()->getEffectivePortalId();
@@ -94,39 +128,73 @@ class CategoryController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        $validated['portal_id'] = $portalId;
-        $validated['show_in_nav'] = $request->boolean('show_in_nav', true);
-        $validated['is_active'] = $request->boolean('is_active', true);
-        $validated['order'] = (int) ($validated['order'] ?? 0);
-        $validated['slug'] = !empty($validated['slug'])
-            ? Str::slug($validated['slug'])
-            : Str::slug($validated['name_en'] ?: $validated['name']);
+        try {
+            $validated['portal_id'] = $portalId;
+            $validated['show_in_nav'] = $request->boolean('show_in_nav', true);
+            $validated['is_active'] = $request->boolean('is_active', true);
 
-        if (!empty($validated['parent_id'])) {
-            $parent = Category::where('portal_id', $portalId)->find($validated['parent_id']);
-            if (!$parent) {
-                throw ValidationException::withMessages(['parent_id' => 'নির্বাচিত প্যারেন্ট ক্যাটাগরি পাওয়া যায়নি।']);
+            // Default color
+            if (empty($validated['color'])) {
+                $validated['color'] = '#e63946';
             }
-            $validated['depth'] = $parent->depth + 1;
-        } else {
-            $validated['depth'] = 0;
-            $validated['parent_id'] = null;
-        }
 
-        $category = Category::create($validated);
+            // Default order
+            if (!isset($validated['order']) || $validated['order'] === '' || $validated['order'] === null) {
+                $maxOrder = Category::withoutGlobalScopes()->where('portal_id', $portalId)->max('order') ?? 0;
+                $validated['order'] = $maxOrder + 1;
+            } else {
+                $validated['order'] = (int) $validated['order'];
+            }
 
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'category' => $category,
-                'message' => 'ক্যাটাগরি সফলভাবে তৈরি হয়েছে!',
+            // Generate unique slug
+            $validated['slug'] = $this->generateUniqueSlug(
+                name: $validated['name'],
+                nameEn: $validated['name_en'] ?? null,
+                customSlug: $validated['slug'] ?? null,
+                portalId: $portalId
+            );
+
+            if (!empty($validated['parent_id'])) {
+                $parent = Category::withoutGlobalScopes()->where('portal_id', $portalId)->find($validated['parent_id']);
+                if (!$parent) {
+                    throw ValidationException::withMessages(['parent_id' => 'নির্বাচিত প্যারেন্ট ক্যাটাগরি পাওয়া যায়নি।']);
+                }
+                $validated['depth'] = $parent->depth + 1;
+            } else {
+                $validated['depth'] = 0;
+                $validated['parent_id'] = null;
+            }
+
+            $category = Category::create($validated);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'category' => $category,
+                    'message' => 'ক্যাটাগরি সফলভাবে তৈরি হয়েছে!',
+                ]);
+            }
+
+            return back()->with('success', 'ক্যাটাগরি সফলভাবে তৈরি হয়েছে!');
+        } catch (ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            Log::error('Category creation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
-        }
 
-        return back()->with('success', 'ক্যাটাগরি সফলভাবে তৈরি হয়েছে!');
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ক্যাটাগরি তৈরিতে ত্রুটি হয়েছে: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->withErrors(['error' => 'ক্যাটাগরি তৈরিতে ত্রুটি হয়েছে: ' . $e->getMessage()])->withInput();
+        }
     }
 
-    public function update(Request $request, Category $category): RedirectResponse
+    public function update(Request $request, Category $category): RedirectResponse|JsonResponse
     {
         $portalId = auth()->user()->getEffectivePortalId();
 
@@ -135,35 +203,76 @@ class CategoryController extends Controller
             'name_en' => 'nullable|string|max:100',
             'slug' => 'nullable|string|max:120',
             'parent_id' => 'nullable|integer|exists:categories,id',
-            'order' => 'integer',
+            'order' => 'nullable|integer',
             'color' => 'nullable|string|max:20',
-            'show_in_nav' => 'boolean',
-            'is_active' => 'boolean',
+            'show_in_nav' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
-        if (!empty($validated['slug'])) {
-            $validated['slug'] = Str::slug($validated['slug']);
-        }
+        try {
+            $validated['portal_id'] = $portalId;
+            $validated['show_in_nav'] = $request->boolean('show_in_nav', true);
+            $validated['is_active'] = $request->boolean('is_active', true);
 
-        // Prevent setting self as parent
-        if (isset($validated['parent_id']) && (int) $validated['parent_id'] === $category->id) {
-            $validated['parent_id'] = null;
-        }
-
-        if (!empty($validated['parent_id'])) {
-            $parent = Category::where('portal_id', $portalId)->find($validated['parent_id']);
-            if (!$parent) {
-                throw ValidationException::withMessages(['parent_id' => 'নির্বাচিত প্যারেন্ট ক্যাটাগরি পাওয়া যায়নি।']);
+            if (empty($validated['color'])) {
+                $validated['color'] = '#e63946';
             }
-            $validated['depth'] = $parent->depth + 1;
-        } else {
-            $validated['depth'] = 0;
-            $validated['parent_id'] = null;
+            if (isset($validated['order'])) {
+                $validated['order'] = (int) $validated['order'];
+            }
+
+            // Generate unique slug ignoring current category ID
+            $validated['slug'] = $this->generateUniqueSlug(
+                name: $validated['name'],
+                nameEn: $validated['name_en'] ?? null,
+                customSlug: $validated['slug'] ?? null,
+                portalId: $portalId,
+                ignoreId: $category->id
+            );
+
+            // Prevent setting self as parent
+            if (isset($validated['parent_id']) && (int) $validated['parent_id'] === $category->id) {
+                $validated['parent_id'] = null;
+            }
+
+            if (!empty($validated['parent_id'])) {
+                $parent = Category::withoutGlobalScopes()->where('portal_id', $portalId)->find($validated['parent_id']);
+                if (!$parent) {
+                    throw ValidationException::withMessages(['parent_id' => 'নির্বাচিত প্যারেন্ট ক্যাটাগরি পাওয়া যায়নি।']);
+                }
+                $validated['depth'] = $parent->depth + 1;
+            } else {
+                $validated['depth'] = 0;
+                $validated['parent_id'] = null;
+            }
+
+            $category->update($validated);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'category' => $category,
+                    'message' => 'ক্যাটাগরি আপডেট করা হয়েছে!',
+                ]);
+            }
+
+            return back()->with('success', 'ক্যাটাগরি আপডেট করা হয়েছে!');
+        } catch (ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            Log::error('Category update failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ক্যাটাগরি আপডেটে ত্রুটি হয়েছে: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            return back()->withErrors(['error' => 'ক্যাটাগরি আপডেটে ত্রুটি হয়েছে: ' . $e->getMessage()])->withInput();
         }
-
-        $category->update($validated);
-
-        return back()->with('success', 'ক্যাটাগরি আপডেট করা হয়েছে!');
     }
 
     public function destroy(Category $category): RedirectResponse
