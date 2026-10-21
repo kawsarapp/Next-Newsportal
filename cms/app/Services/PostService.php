@@ -444,15 +444,22 @@ class PostService
             Cache::forget("portal:{$portalId}:post:slug:" . md5($post->title));
         }
         Cache::forget("portal:{$portalId}:post_counts");
-        Cache::forget("portal:{$portalId}:breaking:5");
-        Cache::forget("portal:{$portalId}:breaking:10");
-        Cache::forget("portal:{$portalId}:breaking:15");
-        Cache::forget("portal:{$portalId}:breaking:20");
+        // Clear breaking & featured API caches
+        for ($i = 1; $i <= 30; $i++) {
+            Cache::forget('api_posts_breaking_' . $i);
+            Cache::forget('api_posts_featured_' . $i);
+        }
 
         try {
             Cache::increment("portal:{$portalId}:posts_version");
         } catch (\Throwable) {
             Cache::put("portal:{$portalId}:posts_version", time(), now()->addDays(30));
+        }
+
+        try {
+            Cache::flush();
+        } catch (\Throwable) {
+            // Cache flush fallback
         }
     }
 }

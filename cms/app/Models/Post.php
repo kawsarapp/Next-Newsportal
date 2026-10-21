@@ -14,8 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use App\Models\Scopes\PortalScope;
+use App\Observers\PostObserver;
 
+#[ObservedBy([PostObserver::class])]
 class Post extends Model
 {
     use HasFactory, SoftDeletes;
@@ -55,6 +58,7 @@ class Post extends Model
 
     protected static function booted(): void
     {
+        static::observe(PostObserver::class);
         static::addGlobalScope(new PortalScope());
 
         static::creating(function (Post $post) {

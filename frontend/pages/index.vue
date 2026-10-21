@@ -72,6 +72,9 @@
                 <img
                   :src="leadPost.featured_image?.original || (typeof leadPost.featured_image === 'string' ? leadPost.featured_image : '') || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop'"
                   :alt="leadPost.title"
+                  loading="eager"
+                  fetchpriority="high"
+                  decoding="async"
                   class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                 />
                 <div class="absolute top-4 left-4 flex gap-2">
@@ -114,8 +117,10 @@
                 <NuxtLink :to="`/news/${post.slug}`" class="flex gap-3 items-start">
                   <div class="w-24 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
                     <img
-                      :src="post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&auto=format&fit=crop'"
+                      :src="post.featured_image?.thumbnail || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&auto=format&fit=crop'"
                       :alt="post.title"
+                      loading="lazy"
+                      decoding="async"
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>
@@ -145,6 +150,8 @@
               <img
                 :src="section.config.banner_image"
                 :alt="section.config?.alt_text || section.title || 'বিজ্ঞাপন'"
+                loading="lazy"
+                decoding="async"
                 class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
               />
             </a>
@@ -195,8 +202,10 @@
               <NuxtLink :to="`/news/${post.slug}`" class="space-y-3 block">
                 <div class="h-48 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
                   <img
-                    :src="post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
+                    :src="post.featured_image?.thumbnail || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
                     :alt="post.title"
+                    loading="lazy"
+                    decoding="async"
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
                 </div>
@@ -237,8 +246,10 @@
                 <NuxtLink :to="`/news/${post.slug}`" class="space-y-3 block">
                   <div class="h-44 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
                     <img
-                      :src="post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
+                      :src="post.featured_image?.thumbnail || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
                       :alt="post.title"
+                      loading="lazy"
+                      decoding="async"
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>
@@ -300,18 +311,17 @@ watch(refreshTrigger, async (newVal, oldVal) => {
   }
 })
 
-// 1. Fetch live posts & featured posts (Instant fresh fetch without stale SWR/cache)
-const { data: postsResponse, pending, error, refresh: refreshPosts } = useFetch(`${config.public.apiBase}/posts?per_page=50`, {
+// 1. Fetch live posts & featured posts (Instant payload caching for fast navigation)
+const { data: postsResponse, pending, error, refresh: refreshPosts } = useFetch(`${config.public.apiBase}/posts?per_page=20`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
   },
   key: 'home-posts-lead',
   lazy: true,
-  getCachedData: () => undefined,
 })
 
-const { data: featuredResponse, refresh: refreshFeatured } = useFetch(`${config.public.apiBase}/posts/featured?limit=10`, {
+const { data: featuredResponse, refresh: refreshFeatured } = useFetch(`${config.public.apiBase}/posts/featured?limit=6`, {
   headers: {
     'Accept': 'application/json',
     'X-Portal-Key': config.public.portalKey,
@@ -319,7 +329,6 @@ const { data: featuredResponse, refresh: refreshFeatured } = useFetch(`${config.
   key: 'home-posts-featured',
   lazy: true,
   default: () => ({ data: [] }),
-  getCachedData: () => undefined,
 })
 
 const posts = computed(() => postsResponse.value?.data || [])

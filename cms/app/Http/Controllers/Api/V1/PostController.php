@@ -10,6 +10,7 @@ use App\Http\Resources\PostCollection;
 use App\Services\PostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PostController extends Controller
 {
@@ -21,13 +22,23 @@ class PostController extends Controller
      */
     public function index(Request $request): PostCollection
     {
-        $posts = $this->postService->getPublishedForApi(
-            filters: $request->only([
-                'category', 'category_id', 'tag', 'type', 'author',
-                'division_id', 'district_id', 'division', 'district', 'search'
-            ]),
-            perPage: min($request->integer('per_page', 15), 50),
-        );
+        class_exists(\App\Models\Post::class);
+        class_exists(\App\Models\Category::class);
+        class_exists(\App\Models\Division::class);
+        class_exists(\App\Models\District::class);
+        class_exists(\App\Models\User::class);
+        class_exists(\App\Models\Tag::class);
+
+        $cacheKey = 'api_posts_' . md5(json_encode($request->all()));
+        $posts = Cache::remember($cacheKey, 60, function () use ($request) {
+            return $this->postService->getPublishedForApi(
+                filters: $request->only([
+                    'category', 'category_id', 'tag', 'type', 'author',
+                    'division_id', 'district_id', 'division', 'district', 'search'
+                ]),
+                perPage: min($request->integer('per_page', 15), 50),
+            );
+        });
 
         return new PostCollection($posts);
     }
@@ -38,18 +49,20 @@ class PostController extends Controller
      */
     public function breaking(Request $request): JsonResponse
     {
-        $breaking = $this->postService->getBreaking(
-            limit: min($request->integer('limit', 20), 30)
-        );
+        $limit = min($request->integer('limit', 20), 30);
+        $data = Cache::remember('api_posts_breaking_' . $limit, 30, function () use ($limit) {
+            $breaking = $this->postService->getBreaking(limit: $limit);
+            return $breaking->map(fn ($p) => [
+                'id'            => $p->id,
+                'title'         => $p->title,
+                'slug'          => $p->slug,
+                'published_at'  => $p->published_at,
+                'is_breaking'   => (bool) $p->is_breaking,
+                'category_name' => $p->category?->name,
+            ])->toArray();
+        });
 
-        return $this->success($breaking->map(fn ($p) => [
-            'id'            => $p->id,
-            'title'         => $p->title,
-            'slug'          => $p->slug,
-            'published_at'  => $p->published_at,
-            'is_breaking'   => (bool) $p->is_breaking,
-            'category_name' => $p->category?->name,
-        ]));
+        return $this->success($data);
     }
 
     /**
@@ -58,11 +71,13 @@ class PostController extends Controller
      */
     public function featured(Request $request): JsonResponse
     {
-        $featured = $this->postService->getFeatured(
-            limit: min($request->integer('limit', 10), 20)
-        );
+        $limit = min($request->integer('limit', 10), 20);
+        $data = Cache::remember('api_posts_featured_' . $limit, 60, function () use ($limit) {
+            $featured = $this->postService->getFeatured(limit: $limit);
+            return PostResource::collection($featured)->resolve();
+        });
 
-        return $this->success(PostResource::collection($featured));
+        return $this->success($data);
     }
 
     /**
