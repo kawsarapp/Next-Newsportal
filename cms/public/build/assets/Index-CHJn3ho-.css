@@ -1,0 +1,1 @@
+@media print{body *{visibility:hidden}#printVoucherArea,#printVoucherArea *{visibility:visible}#printVoucherArea{width:100%;box-shadow:none;border:none;margin:0;padding:20px;position:fixed;top:0;left:0}}
