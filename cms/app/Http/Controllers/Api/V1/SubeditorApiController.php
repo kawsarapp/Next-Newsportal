@@ -411,12 +411,20 @@ class SubeditorApiController extends Controller
             ->whereNull('deleted_at')
             ->where('is_active', true)
             ->where('portal_id', $portalId)
-            ->with('parent:id,name')
+            ->where(function ($q) {
+                $q->whereNull('parent_id')
+                  ->orWhereHas('parent', function ($pq) {
+                      $pq->whereNull('deleted_at')->where('is_active', true);
+                  });
+            })
+            ->with(['parent' => fn ($pq) => $pq->whereNull('deleted_at')->where('is_active', true)])
             ->orderBy('parent_id')
             ->orderBy('order')
             ->get()
             ->map(function ($cat) {
-                $displayName = $cat->parent ? "{$cat->parent->name} ➔ {$cat->name}" : $cat->name;
+                $displayName = ($cat->parent && $cat->parent->name)
+                    ? "{$cat->parent->name} ➔ {$cat->name}"
+                    : $cat->name;
                 return [
                     'id'        => $cat->id,
                     'name'      => $displayName,
@@ -426,7 +434,10 @@ class SubeditorApiController extends Controller
                 ];
             });
 
-        return response()->json($categories);
+        return response()->json($categories)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     /**

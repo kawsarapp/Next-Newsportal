@@ -293,8 +293,17 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
+        $this->deleteCategoryAndChildren($category);
+        return back()->with('success', 'ক্যাটাগরি ও তার সকল সাব-ক্যাটাগরি সফলভাবে মুছে ফেলা হয়েছে!');
+    }
+
+    private function deleteCategoryAndChildren(Category $category): void
+    {
+        $children = Category::withoutGlobalScopes()->where('parent_id', $category->id)->get();
+        foreach ($children as $child) {
+            $this->deleteCategoryAndChildren($child);
+        }
         $category->update(['is_active' => false]);
         $category->delete();
-        return back()->with('success', 'ক্যাটাগরি মুছে ফেলা হয়েছে!');
     }
 }
