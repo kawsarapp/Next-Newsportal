@@ -6,7 +6,7 @@
     "keywords": ["newsportal", "cms", "headless", "laravel"],
     "license": "proprietary",
     "require": {
-        "php": "^8.3",
+        "php": "^8.3|^8.4",
         "inertiajs/inertia-laravel": "^3.5",
         "intervention/image-laravel": "^4.1",
         "laravel/framework": "^13.17",

@@ -20,7 +20,7 @@ class SuperAdminSeeder extends Seeder
                 'portal_id' => null,
                 'name'      => 'Super Admin',
                 'username'  => 'superadmin',
-                'password'  => Hash::make('Admin@12345'),
+                'password'  => 'Admin@12345',
                 'status'    => 'active',
                 'email_verified_at' => now(),
             ]
@@ -37,7 +37,7 @@ class SuperAdminSeeder extends Seeder
                     'portal_id' => $portal->id,
                     'name'      => 'Chief Editor',
                     'username'  => 'chief_editor',
-                    'password'  => Hash::make('Editor@12345'),
+                    'password'  => 'Editor@12345',
                     'status'    => 'active',
                     'email_verified_at' => now(),
                 ]
@@ -51,7 +51,7 @@ class SuperAdminSeeder extends Seeder
                     'portal_id'     => $portal->id,
                     'name'          => 'Sample Reporter',
                     'username'      => 'reporter1',
-                    'password'      => Hash::make('Reporter@12345'),
+                    'password'      => 'Reporter@12345',
                     'reporter_type' => 'staff',
                     'status'        => 'active',
                     'email_verified_at' => now(),
