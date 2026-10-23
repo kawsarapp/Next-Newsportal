@@ -339,7 +339,7 @@ class SubeditorApiController extends Controller
             }
 
             // 9. Build live URL
-            $frontendUrl = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:3000')), '/');
+            $frontendUrl = $this->getFrontendBaseUrl($request, $portalId);
             $liveUrl = "{$frontendUrl}/news/{$slug}";
 
             // 10. Log into subeditor_logs
@@ -490,5 +490,48 @@ class SubeditorApiController extends Controller
         $expectedSecret = trim((string) $expectedSecret);
 
         return hash_equals($expectedSecret, $token);
+    }
+
+    /**
+     * Resolve frontend live base URL dynamically
+     */
+    protected function getFrontendBaseUrl(Request $request, int $portalId): string
+    {
+        // 1. Explicit PortalSetting (if configured by admin in portal_settings)
+        $portalFrontendUrl = PortalSetting::where('portal_id', $portalId)
+            ->whereIn('key', ['frontend_url', 'subeditor_frontend_url'])
+            ->value('value')
+            ?: PortalSetting::whereIn('key', ['frontend_url', 'subeditor_frontend_url'])->value('value');
+
+        if (!empty($portalFrontendUrl) && !str_contains($portalFrontendUrl, 'localhost') && !str_contains($portalFrontendUrl, '127.0.0.1')) {
+            return rtrim((string) $portalFrontendUrl, '/');
+        }
+
+        // 2. Explicit FRONTEND_URL in .env (if set to a valid non-localhost domain)
+        $envUrl = env('FRONTEND_URL');
+        if (!empty($envUrl) && !str_contains($envUrl, 'localhost') && !str_contains($envUrl, '127.0.0.1')) {
+            return rtrim((string) $envUrl, '/');
+        }
+
+        // 3. Dynamic Auto-Detection from Incoming Request:
+        // When Subeditor posts to https://news.newsbd.best/api/... or https://news.newsbd.best/external-news-post,
+        // the request host is news.newsbd.best!
+        $host = $request->getHost();
+        if (!empty($host) && !in_array($host, ['localhost', '127.0.0.1']) && !str_ends_with($host, '.ddev.site')) {
+            $scheme = ($request->isSecure() || $request->header('X-Forwarded-Proto') === 'https' || config('app.env') === 'production')
+                ? 'https'
+                : $request->getScheme();
+            return "{$scheme}://{$host}";
+        }
+
+        // 4. Portal Model domain (if configured)
+        $portal = Portal::withoutGlobalScopes()->find($portalId) ?? Portal::find($portalId);
+        if ($portal && !empty($portal->domain) && !str_contains($portal->domain, 'localhost')) {
+            $domain = preg_replace('#^https?://#', '', trim($portal->domain));
+            return "https://{$domain}";
+        }
+
+        // 5. Fallback for local development
+        return rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
     }
 }

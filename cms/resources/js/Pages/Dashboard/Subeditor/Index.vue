@@ -393,6 +393,27 @@
               </div>
             </div>
 
+            <!-- Frontend Live URL Setting -->
+            <div class="space-y-1.5 pt-2 border-t border-gray-100">
+              <label class="block text-xs font-semibold text-gray-700 tracking-wide">
+                ওয়েবসাইট লাইভ ডোমেইন (Frontend Live URL)
+              </label>
+              <div class="relative flex items-center">
+                <input
+                  type="url"
+                  v-model="form.subeditor_frontend_url"
+                  placeholder="https://news.newsbd.best"
+                  class="w-full text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-gray-800 font-mono placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+              </div>
+              <p class="text-[11px] text-gray-500">
+                ফেসবুক ও সোশ্যাল মিডিয়ায় শেয়ারের জন্য লাইভ লিংক বেস ডোমেইন (যেমন: <code class="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-mono">https://news.newsbd.best</code>)। ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে লাইভ ডোমেইন ডিটেক্ট হবে।
+              </p>
+              <p v-if="form.errors?.subeditor_frontend_url" class="text-xs text-red-600 mt-1">
+                {{ form.errors.subeditor_frontend_url }}
+              </p>
+            </div>
+
             <!-- Save Button -->
             <div class="pt-4 border-t border-gray-100 flex items-center justify-end">
               <button
@@ -792,6 +813,7 @@ const form = useForm({
   subeditor_default_author_id: props.settings.subeditor_default_author_id ?? 1,
   subeditor_default_category_id: props.settings.subeditor_default_category_id ?? 1,
   subeditor_enabled: props.settings.subeditor_enabled ?? true,
+  subeditor_frontend_url: props.settings.subeditor_frontend_url ?? '',
 })
 
 // Keep form in sync when backend updates settings (e.g. token generation)
@@ -812,6 +834,9 @@ watch(
     }
     if (newSettings?.subeditor_enabled !== undefined) {
       form.subeditor_enabled = newSettings.subeditor_enabled
+    }
+    if (newSettings?.subeditor_frontend_url !== undefined) {
+      form.subeditor_frontend_url = newSettings.subeditor_frontend_url ?? ''
     }
   },
   { deep: true }

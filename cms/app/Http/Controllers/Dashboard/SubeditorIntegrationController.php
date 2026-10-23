@@ -30,6 +30,8 @@ class SubeditorIntegrationController extends Controller
                 'subeditor_default_author_id',
                 'subeditor_default_category_id',
                 'subeditor_enabled',
+                'subeditor_frontend_url',
+                'frontend_url',
             ])
             ->pluck('value', 'key');
 
@@ -59,12 +61,17 @@ class SubeditorIntegrationController extends Controller
             ? filter_var($settingsRecords['subeditor_enabled'], FILTER_VALIDATE_BOOLEAN)
             : true;
 
+        $frontendUrl = $settingsRecords['subeditor_frontend_url']
+            ?? $settingsRecords['frontend_url']
+            ?? '';
+
         $settings = [
             'subeditor_api_secret' => $apiSecret,
             'subeditor_auto_publish' => $autoPublish,
             'subeditor_default_author_id' => $defaultAuthorId,
             'subeditor_default_category_id' => $defaultCategoryId,
             'subeditor_enabled' => $enabled,
+            'subeditor_frontend_url' => $frontendUrl,
         ];
 
         // Fetch authors
@@ -110,6 +117,7 @@ class SubeditorIntegrationController extends Controller
             'subeditor_default_author_id' => 'required|integer|exists:users,id',
             'subeditor_default_category_id' => 'required|integer|exists:categories,id',
             'subeditor_enabled' => 'nullable|boolean',
+            'subeditor_frontend_url' => 'nullable|url|max:255',
         ]);
 
         $apiSecret = !empty($validated['subeditor_api_secret'])
@@ -140,6 +148,22 @@ class SubeditorIntegrationController extends Controller
             ['portal_id' => $portalId, 'key' => 'subeditor_enabled'],
             ['value' => $request->boolean('subeditor_enabled') ? '1' : '0', 'type' => 'boolean', 'group' => 'subeditor']
         );
+
+        if (!empty($validated['subeditor_frontend_url'])) {
+            $frontendUrl = rtrim(trim($validated['subeditor_frontend_url']), '/');
+            PortalSetting::updateOrCreate(
+                ['portal_id' => $portalId, 'key' => 'frontend_url'],
+                ['value' => $frontendUrl, 'type' => 'string', 'group' => 'general']
+            );
+            PortalSetting::updateOrCreate(
+                ['portal_id' => $portalId, 'key' => 'subeditor_frontend_url'],
+                ['value' => $frontendUrl, 'type' => 'string', 'group' => 'subeditor']
+            );
+        } else {
+            PortalSetting::where('portal_id', $portalId)
+                ->whereIn('key', ['frontend_url', 'subeditor_frontend_url'])
+                ->delete();
+        }
 
         return back()->with('success', 'Subeditor24 সেটিংস সফলভাবে সংরক্ষিত হয়েছে।');
     }
