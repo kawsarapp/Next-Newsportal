@@ -1,5 +1,11 @@
 import tailwindcss from '@tailwindcss/vite'
 
+const apiTarget = process.env.NUXT_API_TARGET || (
+  process.env.NUXT_PUBLIC_API_BASE?.startsWith('http')
+    ? process.env.NUXT_PUBLIC_API_BASE.replace(/\/api\/v1\/?$/, '')
+    : 'http://127.0.0.1:32776'
+)
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
@@ -34,22 +40,22 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: 'http://newsportal-cms.ddev.site',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
         '/external-news-post': {
-          target: 'http://newsportal-cms.ddev.site',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
         '/get-categories': {
-          target: 'http://newsportal-cms.ddev.site',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
         '/subeditor': {
-          target: 'http://newsportal-cms.ddev.site',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
@@ -60,23 +66,23 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       '/api/**': {
-        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/api/**`,
+        proxy: `${apiTarget}/api/**`,
       },
       '/external-news-post': {
-        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/external-news-post`,
+        proxy: `${apiTarget}/external-news-post`,
       },
       '/get-categories': {
-        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/get-categories`,
+        proxy: `${apiTarget}/get-categories`,
       },
       '/subeditor/**': {
-        proxy: `${process.env.NUXT_PUBLIC_API_BASE?.replace('/api/v1', '') || 'http://newsportal-cms.ddev.site'}/subeditor/**`,
+        proxy: `${apiTarget}/subeditor/**`,
       },
     },
   },
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://newsportal-cms.ddev.site/api/v1',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api/v1',
       portalKey: process.env.NUXT_PUBLIC_PORTAL_KEY || 'pk_live_3hGHMgZc4RhMJ22FHTuqCBpU6fCOgQJd6tjv5agt',
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'দৈনিক বাংলা',
     },

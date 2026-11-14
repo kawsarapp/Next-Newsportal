@@ -167,6 +167,7 @@ corepack_enable: false
 # This is not used by most people, most people use the *router* instead
 # of the localhost port.
 
+host_webserver_port: "32776"
 # host_webserver_port: "59001"
 # The host port binding for the ddev-webserver can be explicitly specified. It is
 # dynamic unless otherwise specified.

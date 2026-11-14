@@ -20,27 +20,22 @@ class PostController extends Controller
      * GET /api/v1/posts
      * List published posts with filters
      */
-    public function index(Request $request): PostCollection
+    public function index(Request $request): JsonResponse
     {
-        class_exists(\App\Models\Post::class);
-        class_exists(\App\Models\Category::class);
-        class_exists(\App\Models\Division::class);
-        class_exists(\App\Models\District::class);
-        class_exists(\App\Models\User::class);
-        class_exists(\App\Models\Tag::class);
-
         $cacheKey = 'api_posts_' . md5(json_encode($request->all()));
-        $posts = Cache::remember($cacheKey, 60, function () use ($request) {
-            return $this->postService->getPublishedForApi(
+        $data = Cache::remember($cacheKey, 60, function () use ($request) {
+            $posts = $this->postService->getPublishedForApi(
                 filters: $request->only([
                     'category', 'category_id', 'tag', 'type', 'author',
                     'division_id', 'district_id', 'division', 'district', 'search'
                 ]),
                 perPage: min($request->integer('per_page', 15), 50),
             );
+
+            return (new PostCollection($posts))->response()->getData(true);
         });
 
-        return new PostCollection($posts);
+        return response()->json($data);
     }
 
     /**
