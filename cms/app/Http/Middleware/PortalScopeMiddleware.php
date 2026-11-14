@@ -79,8 +79,12 @@ class PortalScopeMiddleware
                          ->first();
         }
 
-        // Method 4: Local dev fallback (localhost, 127.0.0.1, or default local portal)
-        if (app()->environment('local', 'testing') || in_array($host, ['localhost', '127.0.0.1', '::1', 'newsportal-cms.ddev.site'], true)) {
+        // Method 4: Fallback for local dev or single active portal
+        if (
+            app()->environment('local', 'testing')
+            || in_array($host, ['localhost', '127.0.0.1', '::1', 'newsportal-cms.ddev.site'], true)
+            || Portal::withoutGlobalScopes()->where('status', 'active')->count() === 1
+        ) {
             $fallback = Portal::withoutGlobalScopes()->where('status', 'active')->first();
             if ($fallback) {
                 return $fallback;
