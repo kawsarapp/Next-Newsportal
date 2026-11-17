@@ -17,7 +17,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user   = $request->user();
-        $portal = $user?->portal;
+        $portal = $user?->portal ?? (app()->bound('current.portal') ? app('current.portal') : \App\Models\Portal::withoutGlobalScopes()->where('status', 'active')->first());
 
         return [
             ...parent::share($request),

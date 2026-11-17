@@ -6,9 +6,11 @@ vendor/
 .output/
 .nuxt/
 dist/
-public/build/
+frontend/dist/
 public/hot/
 public/storage/
+!cms/public/build/
+!cms/public/build/**
 
 # Environment files
 .env

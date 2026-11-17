@@ -59,6 +59,31 @@ export default defineNuxtConfig({
           changeOrigin: true,
           secure: false,
         },
+        '/dashboard': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        '/login': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        '/logout': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        '/build': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+        '/storage': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
   },
@@ -76,6 +101,27 @@ export default defineNuxtConfig({
       },
       '/subeditor/**': {
         proxy: `${apiTarget}/subeditor/**`,
+      },
+      '/dashboard': {
+        proxy: `${apiTarget}/dashboard`,
+      },
+      '/dashboard/**': {
+        proxy: `${apiTarget}/dashboard/**`,
+      },
+      '/login': {
+        proxy: `${apiTarget}/login`,
+      },
+      '/login/**': {
+        proxy: `${apiTarget}/login/**`,
+      },
+      '/logout': {
+        proxy: `${apiTarget}/logout`,
+      },
+      '/build/**': {
+        proxy: `${apiTarget}/build/**`,
+      },
+      '/storage/**': {
+        proxy: `${apiTarget}/storage/**`,
       },
     },
   },

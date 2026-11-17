@@ -84,7 +84,7 @@
                   </div>
                 </div>
                 <div class="text-right flex-shrink-0">
-                  <p class="text-sm font-semibold text-gray-700">{{ post.views.toLocaleString('bn-BD') }}</p>
+                  <p class="text-sm font-semibold text-gray-700">{{ (post.views ?? 0).toLocaleString('bn-BD') }}</p>
                   <p class="text-xs text-gray-400">ভিউ</p>
                 </div>
               </div>
@@ -126,12 +126,12 @@
               <div v-for="(r, i) in topReporters" :key="r.id" class="flex items-center gap-3">
                 <span class="text-sm font-bold text-gray-400 w-5">{{ i + 1 }}</span>
                 <div class="w-7 h-7 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-semibold text-gray-600">
-                  {{ r.name[0] }}
+                  {{ (r.name || 'R')[0] }}
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-700 truncate">{{ r.name }}</p>
                 </div>
-                <span class="text-sm font-bold text-red-600">{{ r.posts }}</span>
+                <span class="text-sm font-bold text-red-600">{{ r.posts ?? 0 }}</span>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@ const props = defineProps({
 
 const today = new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-const totalPosts = computed(() => props.statusCounts.reduce((s, x) => s + x.count, 0))
+const totalPosts = computed(() => (props.statusCounts || []).reduce((s, x) => s + (x.count || 0), 0))
 
 const quickActions = [
   { label: 'নতুন নিউজ',       emoji: '✍️', route: 'dashboard.posts.create' },

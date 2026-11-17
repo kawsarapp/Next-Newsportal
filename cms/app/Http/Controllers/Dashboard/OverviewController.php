@@ -65,10 +65,10 @@ class OverviewController extends Controller
         $baseQuery = fn () => Post::withoutGlobalScopes()->where('portal_id', $portalId);
 
         // Stat cards
-        $todayPosts     = $baseQuery()->whereDate('created_at', today())->count();
-        $publishedToday = $baseQuery()->whereDate('published_at', today())->where('status', 'published')->count();
-        $pendingCount   = $baseQuery()->where('status', 'pending_review')->count();
-        $totalViews     = $baseQuery()->whereDate('published_at', today())->sum('view_count');
+        $todayPosts     = (int) $baseQuery()->whereDate('created_at', today())->count();
+        $publishedToday = (int) $baseQuery()->whereDate('published_at', today())->where('status', 'published')->count();
+        $pendingCount   = (int) $baseQuery()->where('status', 'pending_review')->count();
+        $totalViews     = (int) ($baseQuery()->whereDate('published_at', today())->sum('view_count') ?? 0);
 
         // Pending posts (for approval)
         $pendingPosts = $baseQuery()
@@ -80,10 +80,10 @@ class OverviewController extends Controller
             ->map(fn ($p) => [
                 'id'            => $p->id,
                 'title'         => $p->title,
-                'author'        => $p->author?->name,
-                'category'      => $p->category?->name,
+                'author'        => $p->author?->name ?? 'অজানা লেখক',
+                'category'      => $p->category?->name ?? 'সাধারণ',
                 'thumbnail'     => $p->featured_image_url,
-                'submitted_ago' => $p->updated_at->diffForHumans(),
+                'submitted_ago' => $p->updated_at?->diffForHumans() ?? 'কিছুক্ষণ আগে',
             ]);
 
         // Recent published
@@ -97,8 +97,8 @@ class OverviewController extends Controller
                 'id'            => $p->id,
                 'title'         => $p->title,
                 'category'      => $p->category?->name ?? 'অবর্গীকৃত',
-                'views'         => $p->view_count,
-                'published_ago' => $p->published_at?->diffForHumans(),
+                'views'         => (int) ($p->view_count ?? 0),
+                'published_ago' => $p->published_at?->diffForHumans() ?? 'কিছুক্ষণ আগে',
             ]);
 
         // Breaking news

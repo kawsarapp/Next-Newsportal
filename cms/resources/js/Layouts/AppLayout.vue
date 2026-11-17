@@ -111,8 +111,8 @@ const userMenuRef = ref(null)
 
 const portalName = computed(() => page.props.portal?.name ?? 'Newsportal CMS')
 const userInitials = computed(() => {
-  const name = page.props.auth?.user?.name ?? 'U'
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const name = page.props.auth?.user?.name || 'U'
+  return name.trim().split(/\s+/).filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
 })
 
 // Close user menu on outside click

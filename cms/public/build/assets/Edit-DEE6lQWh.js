@@ -1,0 +1,1 @@
+import{K as e,M as t,T as n,_ as r}from"./app-DBHlZKGb.js";import i from"./Create-BwIJEla7.js";var a={__name:`Edit`,setup(a){return(a,o)=>(t(),r(i,e(n(a.$attrs)),null,16))}};export{a as default};
