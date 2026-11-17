@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\HomepageSection;
 use App\Models\Category;
 use App\Models\PortalSetting;
+use App\Models\Post;
+use App\Http\Resources\PostResource;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +21,10 @@ class FrontendController extends Controller
     public function index(): Response
     {
         $portalId = auth()->user()?->getEffectivePortalId() ?? 1;
+
+        if (HomepageSection::where('portal_id', $portalId)->count() === 0) {
+            $this->seedDefaultSections($portalId);
+        }
 
         $sections = HomepageSection::where('portal_id', $portalId)
             ->with(['category:id,name,slug'])
@@ -412,9 +418,13 @@ class FrontendController extends Controller
         ]);
     }
 
-    public function publicSections(): JsonResponse
+    public function publicSections(Request $request): JsonResponse
     {
         $portalId = app()->bound('current.portal') ? (app('current.portal')?->id ?? 1) : 1;
+
+        if (HomepageSection::where('portal_id', $portalId)->count() === 0) {
+            $this->seedDefaultSections($portalId);
+        }
 
         $sections = HomepageSection::where('portal_id', $portalId)
             ->where('is_active', true)
@@ -422,10 +432,220 @@ class FrontendController extends Controller
             ->orderBy('order')
             ->get();
 
+        foreach ($sections as $section) {
+            $limit = max(1, min((int) ($section->posts_count ?: 6), 24));
+
+            if ($section->category_id) {
+                $catId = (int) $section->category_id;
+                $childrenIds = Category::where('parent_id', $catId)->pluck('id');
+                $grandChildrenIds = Category::whereIn('parent_id', $childrenIds)->pluck('id');
+                $categoryIds = $childrenIds->merge($grandChildrenIds)->push($catId)->unique()->all();
+
+                $posts = Post::published()
+                    ->where('portal_id', $portalId)
+                    ->with([
+                        'author:id,name,avatar',
+                        'category:id,name,slug',
+                        'division:id,name,bn_name',
+                        'district:id,division_id,name,bn_name',
+                        'secondaryCategories:id,name,slug',
+                        'tags:id,name,slug',
+                    ])
+                    ->where(function ($sq) use ($categoryIds) {
+                        $sq->whereIn('category_id', $categoryIds)
+                           ->orWhereHas('secondaryCategories', fn ($scq) => $scq->whereIn('categories.id', $categoryIds));
+                        foreach ($categoryIds as $cid) {
+                            $sq->orWhereJsonContains('additional_category_ids', (int) $cid)
+                               ->orWhereJsonContains('additional_category_ids', (string) $cid);
+                        }
+                    })
+                    ->latest('published_at')
+                    ->limit($limit)
+                    ->get();
+
+                $section->setAttribute('posts', PostResource::collection($posts)->resolve());
+            } elseif (!in_array($section->section_type, ['ad', 'hero'])) {
+                // If section is a content grid/list without a specific category, fetch latest published posts
+                $posts = Post::published()
+                    ->where('portal_id', $portalId)
+                    ->with([
+                        'author:id,name,avatar',
+                        'category:id,name,slug',
+                        'division:id,name,bn_name',
+                        'district:id,division_id,name,bn_name',
+                        'secondaryCategories:id,name,slug',
+                        'tags:id,name,slug',
+                    ])
+                    ->latest('published_at')
+                    ->limit($limit)
+                    ->get();
+
+                $section->setAttribute('posts', PostResource::collection($posts)->resolve());
+            } else {
+                $section->setAttribute('posts', []);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data'    => $sections,
         ]);
+    }
+
+    public function seedDefaultSections(int $portalId): void
+    {
+        if (HomepageSection::where('portal_id', $portalId)->exists()) {
+            return;
+        }
+
+        $categories = Category::where('portal_id', $portalId)
+            ->where('is_active', true)
+            ->get();
+
+        $getCat = function ($slugs) use ($categories) {
+            foreach ((array) $slugs as $slug) {
+                $cat = $categories->first(function ($c) use ($slug) {
+                    return $c->slug === $slug || mb_strtolower($c->name) === mb_strtolower($slug);
+                });
+                if ($cat) return $cat;
+            }
+            return null;
+        };
+
+        $nationalCat = $getCat(['national', 'জাতীয়', 'জাতীয়']);
+        $politicsCat = $getCat(['politics', 'রাজনীতি']);
+        $sportsCat   = $getCat(['sports', 'খেলা', 'খেলাধুলা']);
+        $intlCat     = $getCat(['international', 'আন্তর্জাতিক']);
+        $bizCat      = $getCat(['economy', 'বাণিজ্য', 'অর্থনীতি']);
+        $entCat      = $getCat(['entertainment', 'বিনোদন']);
+        $techCat     = $getCat(['technology', 'প্রযুক্তি', 'তথ্যপ্রযুক্তি']);
+
+        $sectionsToCreate = [];
+        $order = 1;
+
+        // 1. Hero Lead Section
+        $sectionsToCreate[] = [
+            'portal_id'    => $portalId,
+            'category_id'  => null,
+            'title'        => 'প্রধান লিড ও ব্রেকিং নিউজ গ্রিড',
+            'section_type' => 'hero',
+            'layout_type'  => 'grid',
+            'posts_count'  => 4,
+            'order'        => $order++,
+            'is_active'    => true,
+            'config'       => null,
+        ];
+
+        // 2. National Category Section
+        if ($nationalCat) {
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => $nationalCat->id,
+                'title'        => $nationalCat->name . ' সংবাদ',
+                'section_type' => 'grid',
+                'layout_type'  => 'grid',
+                'posts_count'  => 6,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        // 3. Politics Category Section (Split layout)
+        if ($politicsCat) {
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => $politicsCat->id,
+                'title'        => $politicsCat->name . ' ও দেশজুড়ে',
+                'section_type' => 'featured',
+                'layout_type'  => 'split',
+                'posts_count'  => 4,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        // 4. Ad Slot Banner
+        $sectionsToCreate[] = [
+            'portal_id'    => $portalId,
+            'category_id'  => null,
+            'title'        => 'বিজ্ঞাপন স্লট (Leaderboard)',
+            'section_type' => 'ad',
+            'layout_type'  => 'banner',
+            'posts_count'  => 1,
+            'order'        => $order++,
+            'is_active'    => true,
+            'config'       => [
+                'alt_text'     => 'দৈনিক বাংলা ডিজিটাল বিজ্ঞাপন',
+                'link_url'     => 'https://dainikbangla.com',
+                'banner_image' => 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=300&fit=crop&q=80',
+            ],
+        ];
+
+        // 5. Sports Category Section
+        if ($sportsCat) {
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => $sportsCat->id,
+                'title'        => 'খেলাধুলা ও বিনোদন গ্যালারি',
+                'section_type' => 'grid',
+                'layout_type'  => 'slider',
+                'posts_count'  => 6,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        // 6. International Category Section
+        if ($intlCat) {
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => $intlCat->id,
+                'title'        => $intlCat->name . ' সংবাদ',
+                'section_type' => 'grid',
+                'layout_type'  => 'grid',
+                'posts_count'  => 6,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        // 7. Economy / Tech / Entertainment if available
+        if ($bizCat) {
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => $bizCat->id,
+                'title'        => $bizCat->name . ' ও বাণিজ্য',
+                'section_type' => 'grid',
+                'layout_type'  => 'list',
+                'posts_count'  => 4,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        // If no category matched or empty, ensure fallbacks
+        if (count($sectionsToCreate) === 2) { // only hero and ad
+            $sectionsToCreate[] = [
+                'portal_id'    => $portalId,
+                'category_id'  => null,
+                'title'        => 'অন্যান্য গুরুত্বপূর্ণ সংবাদ',
+                'section_type' => 'grid',
+                'layout_type'  => 'grid',
+                'posts_count'  => 6,
+                'order'        => $order++,
+                'is_active'    => true,
+                'config'       => null,
+            ];
+        }
+
+        foreach ($sectionsToCreate as $sec) {
+            HomepageSection::create($sec);
+        }
     }
 
     public function appearance(): Response

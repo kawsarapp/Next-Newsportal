@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PortalSeeder::class,
             SubeditorSettingSeeder::class,
             SuperAdminSeeder::class,
+            HomepageSectionSeeder::class,
         ]);
     }
 }

@@ -66,37 +66,37 @@
         <!-- 1. Hero / Lead Section -->
         <section v-if="section.section_type === 'hero'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <!-- Main Lead Story (Left 2 cols) -->
-          <div v-if="leadPost" class="lg:col-span-2 group">
-            <NuxtLink :to="`/news/${leadPost.slug}`" class="block space-y-3">
+          <div v-if="getHeroLead(section)" class="lg:col-span-2 group">
+            <NuxtLink :to="`/news/${getHeroLead(section).slug}`" class="block space-y-3">
               <div class="h-80 sm:h-96 w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-xs relative">
                 <img
-                  :src="leadPost.featured_image?.original || (typeof leadPost.featured_image === 'string' ? leadPost.featured_image : '') || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop'"
-                  :alt="leadPost.title"
+                  :src="getHeroLead(section).featured_image?.original || (typeof getHeroLead(section).featured_image === 'string' ? getHeroLead(section).featured_image : '') || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop'"
+                  :alt="getHeroLead(section).title"
                   loading="eager"
                   fetchpriority="high"
                   decoding="async"
                   class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                 />
                 <div class="absolute top-4 left-4 flex gap-2">
-                  <span v-if="leadPost.is_breaking" class="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">ব্রেকিং</span>
-                  <span v-if="leadPost.category?.name" class="bg-white/90 text-gray-900 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">{{ leadPost.category.name }}</span>
+                  <span v-if="getHeroLead(section).is_breaking" class="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">ব্রেকিং</span>
+                  <span v-if="getHeroLead(section).category?.name" class="bg-white/90 text-gray-900 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">{{ getHeroLead(section).category.name }}</span>
                 </div>
               </div>
 
               <h2 class="text-2xl sm:text-3xl font-black text-gray-900 leading-snug group-hover:text-red-600 transition-colors">
-                {{ leadPost.title }}
+                {{ getHeroLead(section).title }}
               </h2>
 
               <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed">
-                {{ leadPost.excerpt }}
+                {{ getHeroLead(section).excerpt }}
               </p>
 
               <div class="flex items-center gap-3 text-xs text-gray-400">
-                <span>{{ leadPost.author?.name || 'অনলাইন ডেস্ক' }}</span>
+                <span>{{ getHeroLead(section).author?.name || 'অনলাইন ডেস্ক' }}</span>
                 <span>·</span>
-                <span>{{ leadPost.published_at ? formatDate(leadPost.published_at) : 'আজ' }}</span>
+                <span>{{ getHeroLead(section).published_at ? formatDate(getHeroLead(section).published_at) : 'আজ' }}</span>
                 <span>·</span>
-                <span>⏱️ {{ leadPost.reading_time || 2 }} মিনিট পাঠ</span>
+                <span>⏱️ {{ getHeroLead(section).reading_time || 2 }} মিনিট পাঠ</span>
               </div>
             </NuxtLink>
           </div>
@@ -110,7 +110,7 @@
 
             <div class="space-y-4">
               <div
-                v-for="post in secondaryPosts"
+                v-for="post in getHeroSecondary(section)"
                 :key="post.id"
                 class="group pb-4 border-b border-gray-100 last:border-none"
               >
@@ -193,7 +193,11 @@
             </NuxtLink>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div v-if="getSectionPosts(section).length === 0" class="py-6 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200 text-xs text-gray-400">
+            এই বিভাগে কোনো সংবাদ পাওয়া যায়নি।
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div
               v-for="post in getSectionPosts(section).slice(0, section.posts_count || 4)"
               :key="post.id"
@@ -226,49 +230,148 @@
           </div>
         </section>
 
-          <!-- 4. Default / Category Grid (3 Columns) -->
-          <section v-else class="space-y-6">
-            <div class="flex items-center justify-between border-b border-gray-200 pb-2">
-              <h3 class="text-xl font-bold text-gray-900 border-l-4 border-red-600 pl-3">
-                {{ section.title }}
-              </h3>
-              <NuxtLink v-if="section.category" :to="`/category/${section.category.slug}`" class="text-xs text-red-600 font-semibold hover:underline">
-                সকল সংবাদ →
-              </NuxtLink>
-            </div>
+        <!-- 4. List Layout (Compact Horizontal Cards) -->
+        <section v-else-if="section.layout_type === 'list'" class="space-y-5">
+          <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+            <h3 class="text-xl font-bold text-gray-900 border-l-4 border-indigo-600 pl-3">
+              {{ section.title }}
+            </h3>
+            <NuxtLink v-if="section.category" :to="`/category/${section.category.slug}`" class="text-xs text-red-600 font-semibold hover:underline">
+              আরও দেখুন →
+            </NuxtLink>
+          </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              <div
-                v-for="post in getSectionPosts(section).slice(0, section.posts_count || 6)"
-                :key="post.id"
-                class="bg-white rounded-2xl p-4 border border-gray-200/80 shadow-xs hover:shadow-md transition-shadow group flex flex-col justify-between"
-              >
-                <NuxtLink :to="`/news/${post.slug}`" class="space-y-3 block">
-                  <div class="h-44 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                    <img
-                      :src="post.featured_image?.thumbnail || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
-                      :alt="post.title"
-                      loading="lazy"
-                      decoding="async"
-                      class="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <span class="text-xs font-semibold text-red-600">{{ post.category?.name }}</span>
-                  <h4 class="font-bold text-sm text-gray-800 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">
+          <div v-if="getSectionPosts(section).length === 0" class="py-6 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200 text-xs text-gray-400">
+            এই বিভাগে কোনো সংবাদ পাওয়া যায়নি।
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              v-for="post in getSectionPosts(section).slice(0, section.posts_count || 6)"
+              :key="post.id"
+              class="bg-white rounded-xl p-3 border border-gray-200/80 shadow-2xs hover:shadow-xs transition-shadow group flex gap-3.5 items-center"
+            >
+              <div class="w-28 h-20 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                <img
+                  :src="post.featured_image?.thumbnail || post.featured_image?.sm || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=400&auto=format&fit=crop'"
+                  :alt="post.title"
+                  loading="lazy"
+                  decoding="async"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="text-[11px] font-semibold text-indigo-600">{{ post.category?.name }}</span>
+                <NuxtLink :to="`/news/${post.slug}`">
+                  <h4 class="font-bold text-xs sm:text-sm text-gray-800 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">
                     {{ post.title }}
                   </h4>
-                  <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                    {{ post.excerpt }}
-                  </p>
                 </NuxtLink>
-
-                <div class="pt-3 border-t border-gray-100 text-[11px] text-gray-400 mt-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
                   <span>{{ post.author?.name || 'অনলাইন ডেস্ক' }}</span>
-                  <span>👁️ {{ post.view_count || 0 }}</span>
+                  <span>·</span>
+                  <span>{{ post.published_at ? formatDate(post.published_at) : 'আজ' }}</span>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
+
+        <!-- 5. Horizontal Slider / Carousel Cards -->
+        <section v-else-if="section.layout_type === 'slider'" class="space-y-5">
+          <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+            <h3 class="text-xl font-bold text-gray-900 border-l-4 border-emerald-600 pl-3">
+              {{ section.title }}
+            </h3>
+            <NuxtLink v-if="section.category" :to="`/category/${section.category.slug}`" class="text-xs text-red-600 font-semibold hover:underline">
+              সকল সংবাদ →
+            </NuxtLink>
+          </div>
+
+          <div v-if="getSectionPosts(section).length === 0" class="py-6 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200 text-xs text-gray-400">
+            এই বিভাগে কোনো সংবাদ পাওয়া যায়নি।
+          </div>
+
+          <div v-else class="flex gap-5 overflow-x-auto pb-4 pt-1 snap-x scrollbar-thin">
+            <div
+              v-for="post in getSectionPosts(section).slice(0, section.posts_count || 6)"
+              :key="post.id"
+              class="w-64 sm:w-72 shrink-0 snap-start bg-white rounded-2xl p-3.5 border border-gray-200/80 shadow-xs hover:shadow-md transition-shadow group flex flex-col justify-between"
+            >
+              <NuxtLink :to="`/news/${post.slug}`" class="space-y-2.5 block">
+                <div class="h-40 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                  <img
+                    :src="post.featured_image?.thumbnail || post.featured_image?.sm || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&auto=format&fit=crop'"
+                    :alt="post.title"
+                    loading="lazy"
+                    decoding="async"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <span class="text-xs font-semibold text-emerald-600">{{ post.category?.name }}</span>
+                <h4 class="font-bold text-sm text-gray-800 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">
+                  {{ post.title }}
+                </h4>
+                <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                  {{ post.excerpt }}
+                </p>
+              </NuxtLink>
+
+              <div class="pt-2.5 border-t border-gray-100 text-[11px] text-gray-400 mt-2.5 flex items-center justify-between">
+                <span>{{ post.author?.name || 'অনলাইন ডেস্ক' }}</span>
+                <span>👁️ {{ post.view_count || 0 }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Default / Category Grid (3 Columns) -->
+        <section v-else class="space-y-6">
+          <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+            <h3 class="text-xl font-bold text-gray-900 border-l-4 border-red-600 pl-3">
+              {{ section.title }}
+            </h3>
+            <NuxtLink v-if="section.category" :to="`/category/${section.category.slug}`" class="text-xs text-red-600 font-semibold hover:underline">
+              সকল সংবাদ →
+            </NuxtLink>
+          </div>
+
+          <div v-if="getSectionPosts(section).length === 0" class="py-6 text-center bg-gray-50/60 rounded-2xl border border-dashed border-gray-200 text-xs text-gray-400">
+            এই বিভাগে কোনো সংবাদ পাওয়া যায়নি।
+          </div>
+
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div
+              v-for="post in getSectionPosts(section).slice(0, section.posts_count || 6)"
+              :key="post.id"
+              class="bg-white rounded-2xl p-4 border border-gray-200/80 shadow-xs hover:shadow-md transition-shadow group flex flex-col justify-between"
+            >
+              <NuxtLink :to="`/news/${post.slug}`" class="space-y-3 block">
+                <div class="h-44 w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                  <img
+                    :src="post.featured_image?.thumbnail || post.featured_image?.medium || post.featured_image?.original || (typeof post.featured_image === 'string' ? post.featured_image : '') || 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=600&auto=format&fit=crop'"
+                    :alt="post.title"
+                    loading="lazy"
+                    decoding="async"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <span class="text-xs font-semibold text-red-600">{{ post.category?.name }}</span>
+                <h4 class="font-bold text-sm text-gray-800 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">
+                  {{ post.title }}
+                </h4>
+                <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                  {{ post.excerpt }}
+                </p>
+              </NuxtLink>
+
+              <div class="pt-3 border-t border-gray-100 text-[11px] text-gray-400 mt-3 flex items-center justify-between">
+                <span>{{ post.author?.name || 'অনলাইন ডেস্ক' }}</span>
+                <span>👁️ {{ post.view_count || 0 }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
           <!-- YouTube Live & Video Gallery Section (Rendered ONCE at configured position, e.g. top or middle) -->
           <HomeYoutubeSection
@@ -371,8 +474,28 @@ const activeSections = computed(() => {
   return defaultSections.filter(s => s.is_active)
 })
 
+function getHeroLead(section) {
+  const p = getSectionPosts(section)
+  if (section?.category_id && p.length > 0) {
+    return p[0]
+  }
+  return leadPost.value
+}
+
+function getHeroSecondary(section) {
+  const p = getSectionPosts(section)
+  if (section?.category_id && p.length > 1) {
+    return p.slice(1, 4)
+  }
+  return secondaryPosts.value
+}
+
 // Helper to filter posts by section category
 function getSectionPosts(section) {
+  if (section.posts && Array.isArray(section.posts) && section.posts.length > 0) {
+    return section.posts
+  }
+
   if (section.category_id || section.category?.id) {
     const targetCatId = Number(section.category_id || section.category?.id)
     const filtered = posts.value.filter(p => {
